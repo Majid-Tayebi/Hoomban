@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const input = process.argv[2] ?? 'static/images/landing-hero-brain.jpg';
-const output = process.argv[3] ?? 'static/images/landing-hero-brain.png';
+const output = process.argv[3] ?? 'scripts/image-sources/landing-hero-brain.png';
 
 const { data, info } = await sharp(readFileSync(input)).ensureAlpha().raw().toBuffer({
 	resolveWithObject: true

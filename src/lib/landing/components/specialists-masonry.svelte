@@ -62,6 +62,7 @@
 					alt=""
 					class="h-full w-full object-cover object-top transition-transform duration-300 ease-in-out group-hover:scale-[1.02]"
 					loading="lazy"
+					decoding="async"
 				/>
 			{:else}
 				<div

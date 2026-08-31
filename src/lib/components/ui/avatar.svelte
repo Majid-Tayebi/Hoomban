@@ -7,7 +7,7 @@
 
 <div class={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)} {...restProps}>
 	{#if src}
-		<img class="aspect-square h-full w-full" src={src} alt={alt} />
+		<img class="aspect-square h-full w-full" src={src} alt={alt} loading="lazy" decoding="async" />
 	{:else if children}
 		{@render children()}
 	{:else}

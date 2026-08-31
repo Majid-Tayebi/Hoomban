@@ -1,23 +1,19 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { pb } from '$lib/pocketbase';
 	import { getUser } from '$lib/auth.svelte';
-	import { invalidateAll } from '$app/navigation';
 	import LandingNavbar from '$lib/components/ui/landing-navbar.svelte';
 	import LandingHeroBanner from '$lib/components/ui/landing-hero-banner.svelte';
 	import LandingScrollReveal from '$lib/components/ui/landing-scroll-reveal.svelte';
-	import LandingTrustSection from '$lib/components/ui/landing-trust-section.svelte';
 	import LandingFeaturesSection from '$lib/components/ui/landing-features-section.svelte';
-	import DoctorsShowcase from '$lib/components/doctors-showcase.svelte';
-	import InfiniteMovingCardsDemo from '$lib/components/ui/infinite-moving-cards-demo.svelte';
-	import LandingFaqSection from '$lib/components/ui/landing-faq-section.svelte';
-	import LandingCtaSection from '$lib/components/ui/landing-cta-section.svelte';
-	import { HOOMBAN_BRAND_NAME, HOOMBAN_LOGO_SRC } from '$lib/brand/logo';
+	import BrandLogo from '$lib/components/brand-logo.svelte';
+	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
 	import type {
+		LandingArticle,
 		LandingDoctor,
 		LandingService,
 		LandingTestimonial
 	} from '$lib/landing/public-data';
+	import type { Component } from 'svelte';
 
 	let {
 		data
@@ -28,6 +24,7 @@
 			doctors: LandingDoctor[];
 			services: LandingService[];
 			testimonials: LandingTestimonial[];
+			articles: LandingArticle[];
 		};
 	} = $props();
 
@@ -36,18 +33,47 @@
 
 	const testimonials = $derived(data.testimonials);
 
-	$effect(() => {
-		let cancelled = false;
+	let DoctorsShowcase = $state<Component<{
+		doctors: LandingDoctor[];
+		testimonials: LandingTestimonial[];
+		onBook?: (doctorId?: string) => void;
+	}> | null>(null);
+	let InfiniteMovingCards = $state<Component<{
+		compact?: boolean;
+		items: { quote: string; name: string; title: string }[];
+	}> | null>(null);
+	let LandingFaqSection = $state<Component | null>(null);
+	let LandingArticlesSection = $state<Component<{
+		articles: LandingArticle[];
+	}> | null>(null);
 
-		void pb.collection('doctors').subscribe('*', () => {
-			if (!cancelled) void invalidateAll();
+	function loadDoctorsShowcase() {
+		if (DoctorsShowcase) return;
+		void import('$lib/components/doctors-showcase.svelte').then((m) => {
+			DoctorsShowcase = m.default;
 		});
+	}
 
-		return () => {
-			cancelled = true;
-			void pb.collection('doctors').unsubscribe('*');
-		};
-	});
+	function loadTestimonials() {
+		if (InfiniteMovingCards) return;
+		void import('$lib/components/ui/infinite-moving-cards-demo.svelte').then((m) => {
+			InfiniteMovingCards = m.default;
+		});
+	}
+
+	function loadFaq() {
+		if (LandingFaqSection) return;
+		void import('$lib/components/ui/landing-faq-section.svelte').then((m) => {
+			LandingFaqSection = m.default;
+		});
+	}
+
+	function loadArticles() {
+		if (LandingArticlesSection) return;
+		void import('$lib/landing/components/landing-articles-section.svelte').then((m) => {
+			LandingArticlesSection = m.default;
+		});
+	}
 </script>
 
 <div class="min-h-dvh bg-white text-foreground dark:bg-background">
@@ -55,16 +81,12 @@
 
 	<LandingNavbar {user} heroSection={heroSection} />
 
-	<LandingScrollReveal>
-		<LandingTrustSection />
-	</LandingScrollReveal>
-
-	<LandingScrollReveal>
+	<LandingScrollReveal onvisible={loadDoctorsShowcase}>
 		<LandingFeaturesSection services={data.services} />
 	</LandingScrollReveal>
 
 	{#if data.doctors.length}
-		<LandingScrollReveal>
+		<LandingScrollReveal onvisible={loadDoctorsShowcase}>
 			<section id="doctors" class="bg-white px-4 pt-20 pb-6 dark:bg-background sm:px-6 sm:pt-24 sm:pb-8">
 				<div class="mx-auto mb-8 max-w-3xl text-center">
 					<p class="mb-2 text-xs font-semibold tracking-wide text-primary sm:text-sm">تیم درمان</p>
@@ -73,18 +95,24 @@
 						روانشناسان و درمانگران کلینیک — انتخاب متخصص مناسب برای شما
 					</p>
 				</div>
-				<DoctorsShowcase
-					doctors={data.doctors}
-					testimonials={testimonials}
-					onBook={(doctorId) =>
-						goto(doctorId ? `/appointments/book?doctor=${doctorId}` : '/appointments/book')}
-				/>
+				{#if DoctorsShowcase}
+					<DoctorsShowcase
+						doctors={data.doctors}
+						testimonials={testimonials}
+						onBook={(doctorId) =>
+							goto(doctorId ? `/appointments/book?doctor=${doctorId}` : '/appointments/book')}
+					/>
+				{:else}
+					<div class="flex min-h-[12rem] items-center justify-center text-sm text-muted-foreground">
+						در حال بارگذاری متخصصین…
+					</div>
+				{/if}
 			</section>
 		</LandingScrollReveal>
 	{/if}
 
 	{#if testimonials.length}
-		<LandingScrollReveal>
+		<LandingScrollReveal onvisible={loadTestimonials}>
 			<section
 				id="testimonials"
 				class="overflow-hidden bg-white px-4 pb-12 pt-2 dark:bg-background sm:px-6 sm:pb-16 sm:pt-4"
@@ -94,24 +122,37 @@
 					<h2 class="text-xl font-bold tracking-tight sm:text-3xl">نظر مراجعان</h2>
 					<p class="mt-1.5 text-sm text-muted-foreground">از بازخوردهای منتشرشده در سایت هومبان</p>
 				</div>
-				<InfiniteMovingCardsDemo
-					compact
-					items={testimonials.map((tm) => ({
-						quote: tm.body,
-						name: tm.author,
-						title: tm.source || 'مراجع هومبان'
-					}))}
-				/>
+				{#if InfiniteMovingCards}
+					<InfiniteMovingCards
+						compact
+						items={testimonials.map((tm) => ({
+							quote: tm.body,
+							name: tm.author,
+							title: tm.source || 'مراجع هومبان'
+						}))}
+					/>
+				{/if}
 			</section>
 		</LandingScrollReveal>
 	{/if}
 
-	<LandingScrollReveal>
-		<LandingFaqSection />
+	<LandingScrollReveal onvisible={loadFaq}>
+		{#if LandingFaqSection}
+			<LandingFaqSection />
+		{/if}
 	</LandingScrollReveal>
 
-	<LandingScrollReveal>
-		<LandingCtaSection />
+	<LandingScrollReveal onvisible={loadArticles}>
+		{#if LandingArticlesSection}
+			<LandingArticlesSection articles={data.articles} />
+		{:else}
+			<section
+				id="articles"
+				class="flex min-h-[12rem] items-center justify-center bg-white px-4 py-16 text-sm text-muted-foreground dark:bg-background"
+			>
+				در حال بارگذاری مقالات…
+			</section>
+		{/if}
 	</LandingScrollReveal>
 
 	<LandingScrollReveal>
@@ -122,13 +163,7 @@
 				<div class="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-10">
 					<div class="col-span-2 md:col-span-1">
 						<div class="mb-3 flex items-center gap-2">
-							<img
-								src={HOOMBAN_LOGO_SRC}
-								alt=""
-								class="h-9 w-9 object-contain"
-								width="72"
-								height="72"
-							/>
+							<BrandLogo class="h-9 w-9" width={72} height={72} />
 							<span class="text-lg font-bold">{HOOMBAN_BRAND_NAME}</span>
 						</div>
 						<p class="text-sm leading-relaxed text-muted-foreground">

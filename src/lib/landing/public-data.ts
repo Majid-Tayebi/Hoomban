@@ -1,4 +1,5 @@
 import { pb } from '$lib/pocketbase';
+import { LANDING_ARTICLES_FALLBACK } from '$lib/landing/articles-fallback';
 
 export type LandingDoctor = {
 	id: string;
@@ -28,6 +29,19 @@ export type LandingTestimonial = {
 	doctorId?: string;
 };
 
+export type LandingArticle = {
+	id: string;
+	title: string;
+	slug: string;
+	excerpt: string;
+	authorName: string;
+	cover?: string;
+	/** External cover URL (e.g. from hoomban.com) when not stored in PocketBase */
+	coverSrc?: string;
+	sourceUrl?: string;
+	updated: string;
+};
+
 function mapLandingDoctor(item: Record<string, unknown>): LandingDoctor {
 	const expand = item.expand as { user?: { name?: string } } | undefined;
 	return {
@@ -38,6 +52,25 @@ function mapLandingDoctor(item: Record<string, unknown>): LandingDoctor {
 		visitFee: Number(item.visit_fee || 0),
 		slotDuration: Number(item.slot_duration || 45),
 		photo: item.photo ? String(item.photo) : undefined,
+		updated: String(item.updated || item.created || '')
+	};
+}
+
+function mapLandingArticle(item: Record<string, unknown>): LandingArticle {
+	const expand = item.expand as { author?: { name?: string } } | undefined;
+	const authorRel = item.author;
+	let authorName = expand?.author?.name ? String(expand.author.name) : '';
+	if (!authorName && typeof authorRel === 'string') authorName = '';
+	if (!authorName) authorName = 'تیم هومبان';
+
+	const excerpt = String(item.excerpt || item.content || '').trim();
+	return {
+		id: String(item.id),
+		title: String(item.title || ''),
+		slug: String(item.slug || item.id),
+		excerpt: excerpt.length > 160 ? `${excerpt.slice(0, 157)}…` : excerpt,
+		authorName,
+		cover: item.cover ? String(item.cover) : undefined,
 		updated: String(item.updated || item.created || '')
 	};
 }
@@ -66,14 +99,46 @@ export function getLandingDoctorPhotoUrl(
 	return doctor.updated ? `${base}?v=${encodeURIComponent(doctor.updated)}` : base;
 }
 
+export function getLandingArticleCoverUrl(
+	article: Pick<LandingArticle, 'id' | 'cover' | 'coverSrc' | 'updated'>
+): string | null {
+	if (article.coverSrc) return article.coverSrc;
+	if (!article.cover) return null;
+	const base = pb.files.getURL(
+		{ id: article.id, collectionName: 'articles' } as never,
+		article.cover
+	);
+	return article.updated ? `${base}?v=${encodeURIComponent(article.updated)}` : base;
+}
+
+export function resolveLandingArticles(articles: LandingArticle[]): LandingArticle[] {
+	if (articles.length > 0) return articles.slice(0, 6);
+	return LANDING_ARTICLES_FALLBACK;
+}
+
+export async function loadPublishedArticles(limit = 50): Promise<LandingArticle[]> {
+	try {
+		const result = await pb.collection('articles').getList(1, limit, {
+			filter: 'is_published = true',
+			sort: '-created',
+			expand: 'author'
+		});
+		const mapped = result.items.map((item) =>
+			mapLandingArticle(item as unknown as Record<string, unknown>)
+		);
+		return mapped.length > 0 ? mapped : LANDING_ARTICLES_FALLBACK;
+	} catch {
+		return LANDING_ARTICLES_FALLBACK;
+	}
+}
+
 export async function loadLandingPublicData(): Promise<{
 	doctors: LandingDoctor[];
 	services: LandingService[];
 	testimonials: LandingTestimonial[];
+	articles: LandingArticle[];
 }> {
-	// همه متخصصین فعال — تعداد کارت‌ها = تعداد رکوردهای دیتابیس
-	// فیلتر دقیق‌تر نمایش در سایت (مثلاً show_on_landing) بعداً از پنل اضافه می‌شود
-	const [doctorItems, servicesResult, testimonialsResult] = await Promise.all([
+	const [doctorItems, servicesResult, testimonialsResult, articlesResult] = await Promise.all([
 		pb.collection('doctors').getFullList({
 			filter: 'is_active = true',
 			sort: 'sort_order',
@@ -87,6 +152,11 @@ export async function loadLandingPublicData(): Promise<{
 			filter: 'is_published = true',
 			sort: 'sort_order',
 			expand: 'doctor'
+		}),
+		pb.collection('articles').getList(1, 6, {
+			filter: 'is_published = true',
+			sort: '-created',
+			expand: 'author'
 		})
 	]);
 
@@ -120,6 +190,11 @@ export async function loadLandingPublicData(): Promise<{
 				rating: item.rating != null ? Number(item.rating) : undefined,
 				doctorId
 			};
-		})
+		}),
+		articles: resolveLandingArticles(
+			articlesResult.items.map((item) =>
+				mapLandingArticle(item as unknown as Record<string, unknown>)
+			)
+		)
 	};
 }

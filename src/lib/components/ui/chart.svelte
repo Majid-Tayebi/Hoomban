@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Chart, { type ChartType } from 'chart.js/auto';
+	import type { ChartType, Chart as ChartJs } from 'chart.js';
 
 	let {
 		type = 'bar' as ChartType,
@@ -8,12 +8,19 @@
 		options = {},
 		class: className = 'h-64'
 	}: { type?: ChartType; data: any; options?: any; class?: string } = $props();
+
 	let canvasElement: HTMLCanvasElement;
-	let chartInstance: Chart | undefined;
+	let chartInstance: ChartJs | undefined;
+	let ChartCtor = $state<typeof ChartJs | null>(null);
 
 	onMount(() => {
-		if (canvasElement) {
-			chartInstance = new Chart(canvasElement, {
+		let cancelled = false;
+
+		void (async () => {
+			const mod = await import('chart.js/auto');
+			if (cancelled || !canvasElement) return;
+			ChartCtor = mod.default;
+			chartInstance = new mod.default(canvasElement, {
 				type,
 				data,
 				options: {
@@ -22,9 +29,10 @@
 					...options
 				}
 			});
-		}
+		})();
 
 		return () => {
+			cancelled = true;
 			chartInstance?.destroy();
 		};
 	});
@@ -38,5 +46,10 @@
 </script>
 
 <div class="w-full {className}">
-	<canvas bind:this={canvasElement}></canvas>
+	{#if !ChartCtor}
+		<div class="flex h-full min-h-[8rem] items-center justify-center text-xs text-muted-foreground">
+			در حال بارگذاری نمودار…
+		</div>
+	{/if}
+	<canvas bind:this={canvasElement} class={ChartCtor ? '' : 'sr-only'}></canvas>
 </div>

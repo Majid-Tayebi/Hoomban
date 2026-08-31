@@ -17,7 +17,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { HOOMBAN_BRAND_NAME, HOOMBAN_LOGO_SRC } from '$lib/brand/logo';
+	import BrandLogo from '$lib/components/brand-logo.svelte';
+	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
 	import { cn } from '$lib/utils';
 
 	let {
@@ -51,13 +52,7 @@
 				go('/dashboard');
 			}}
 		>
-			<img
-				src={HOOMBAN_LOGO_SRC}
-				alt=""
-				class="h-8 w-8 shrink-0 object-contain"
-				width="64"
-				height="64"
-			/>
+			<BrandLogo class="h-8 w-8" width={64} height={64} priority />
 			<span class="text-sm font-semibold">{HOOMBAN_BRAND_NAME}</span>
 		</a>
 	</div>

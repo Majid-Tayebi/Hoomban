@@ -10,11 +10,12 @@ const self = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (gl
 const CACHE = `hoomban-${version}`;
 const ASSETS = [...build, ...files];
 
-const ICON = '/images/hoomban-logo.png';
+const ICON = '/images/hoomban-logo-192.png';
 
-/** Never cache API or PocketBase responses — static assets only. */
+/** Never cache API or PocketBase responses — static assets + images only. */
 function shouldCacheRequest(url: URL): boolean {
 	if (url.pathname.startsWith('/api/')) return false;
+	if (url.pathname.startsWith('/images/')) return true;
 	if (url.pathname.startsWith('/_app/')) return true;
 	if (ASSETS.includes(url.pathname)) return true;
 	if (url.origin !== self.location.origin) return false;

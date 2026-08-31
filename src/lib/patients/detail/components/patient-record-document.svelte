@@ -2,7 +2,8 @@
 	import type { PatientDetailData } from '../types';
 	import { referralStatusLabel } from '../services/patient-referrals';
 	import { attachmentCategoryLabel } from '../services/patient-attachments';
-	import { HOOMBAN_BRAND_NAME, HOOMBAN_LOGO_SRC } from '$lib/brand/logo';
+	import BrandLogo from '$lib/components/brand-logo.svelte';
+	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
 	import { formatFaDateTime } from '$lib/date';
 
 	let {
@@ -27,13 +28,7 @@
 				{/if}
 			</p>
 		</div>
-		<img
-			src={HOOMBAN_LOGO_SRC}
-			alt=""
-			class="h-14 w-14 shrink-0 object-contain"
-			width="112"
-			height="112"
-		/>
+		<BrandLogo class="h-14 w-14" width={112} height={112} />
 	</header>
 
 	<section class="space-y-2 break-inside-avoid">

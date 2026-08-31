@@ -79,6 +79,8 @@
 					src={photo}
 					alt={doctor.displayName}
 					class="aspect-square w-full rounded-2xl object-cover object-top"
+					loading="lazy"
+					decoding="async"
 				/>
 			{:else}
 				<div
@@ -153,6 +155,8 @@
 					src={photo}
 					alt={doctor.displayName}
 					class="absolute inset-0 h-full w-full object-cover object-top"
+					loading="lazy"
+					decoding="async"
 				/>
 			{:else}
 				<div

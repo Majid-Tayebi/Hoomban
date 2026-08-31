@@ -8,7 +8,7 @@
 	import CardTitle from '$lib/components/ui/card-title.svelte';
 	import CardContent from '$lib/components/ui/card-content.svelte';
 	import { onDestroy } from 'svelte';
-	import Chart from 'chart.js/auto';
+	import type { Chart as ChartJs } from 'chart.js';
 
 	let id = $derived($page.params.id ?? '');
 	let result = $state<{
@@ -19,8 +19,9 @@
 	let test = $state<{ title: string } | null>(null);
 	let isLoading = $state(true);
 	let error = $state('');
-	let chart: Chart | null = null;
+	let chart: ChartJs | null = null;
 	let canvasElement = $state<HTMLCanvasElement | null>(null);
+	let ChartCtor = $state<typeof ChartJs | null>(null);
 
 	async function loadResult() {
 		if (!id) return;
@@ -44,8 +45,13 @@
 		}
 	}
 
-	function createChart() {
+	async function createChart() {
 		if (!canvasElement || !result) return;
+
+		if (!ChartCtor) {
+			const mod = await import('chart.js/auto');
+			ChartCtor = mod.default;
+		}
 
 		const scores = JSON.parse(result.scores_json) as Record<string, number>;
 		const labels = Object.keys(scores);
@@ -53,7 +59,7 @@
 
 		if (chart) chart.destroy();
 
-		chart = new Chart(canvasElement, {
+		chart = new ChartCtor(canvasElement, {
 			type: 'radar',
 			data: {
 				labels,
@@ -90,7 +96,7 @@
 
 	$effect(() => {
 		if (result && canvasElement) {
-			createChart();
+			void createChart();
 		}
 	});
 
