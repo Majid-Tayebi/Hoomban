@@ -55,7 +55,7 @@ export const TRENDS_CHART_DATA = {
 	]
 };
 
-const appointmentRows: Omit<AppointmentListItem, 'patientId' | 'patientUserId'>[] = [
+const appointmentRows: Omit<AppointmentListItem, 'patientId' | 'patientUserId' | 'doctorId'>[] = [
 	{
 		id: '1',
 		patientName: 'علی رضایی',
@@ -196,6 +196,7 @@ const appointmentRows: Omit<AppointmentListItem, 'patientId' | 'patientUserId'>[
 
 export const MOCK_APPOINTMENT_LIST: AppointmentListItem[] = appointmentRows.map((row, index) => ({
 	...row,
+	doctorId: `demo-doctor-${row.id}`,
 	patientId: formatPatientFileNumber(index + 1, row.dateTime),
 	patientUserId: `demo-patient-${index + 1}`
 }));

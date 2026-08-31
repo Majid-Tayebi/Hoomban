@@ -1,4 +1,4 @@
-import { pb } from '$lib/pocketbase';
+import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
 import type { AuthUser } from '$lib/auth.svelte';
 import { addDays, startOfDay, toPersianWeekdayIndex, WEEKDAYS_FA } from '$lib/date';
 import { fetchPaymentsTotal } from '$lib/desk/services/accounting';
@@ -77,6 +77,7 @@ function mapAppointmentRecords(
 				: '—',
 			phone: exp.patient?.mobile ? String(exp.patient.mobile) : '—',
 			doctorName: exp.doctor?.display_name || exp.doctor?.expand?.user?.name || 'روانشناس',
+			doctorId: String((apt as { doctor?: string }).doctor || ''),
 			specialty: exp.doctor?.specialty || 'روانشناسی',
 			type: apt.type === 'online' ? 'جلسه آنلاین' : 'ویزیت حضوری',
 			dateTime: new Date(String(apt.date_time)),
@@ -168,18 +169,20 @@ async function fetchAppointments(
 		const result = await pb.collection('appointments').getList(1, limit, {
 			filter,
 			sort,
-			expand: 'patient,doctor,doctor.user'
+			expand: 'patient,doctor',
+			...PB_NO_AUTO_CANCEL
 		});
 
 		return mapAppointmentRecords(result.items);
-	} catch {
+	} catch (err) {
+		console.error('fetchAppointments failed:', err);
 		return [];
 	}
 }
 
 async function countAppointments(filter: string): Promise<number> {
 	try {
-		const r = await pb.collection('appointments').getList(1, 1, { filter });
+		const r = await pb.collection('appointments').getList(1, 1, { filter, ...PB_NO_AUTO_CANCEL });
 		return r.totalItems;
 	} catch {
 		return 0;
@@ -201,7 +204,8 @@ async function fetchTodayAppointmentCounts(): Promise<Map<string, number>> {
 	try {
 		const items = await pb.collection('appointments').getFullList({
 			filter: `date_time >= "${dayStart.toISOString()}" && date_time < "${dayEnd.toISOString()}" && status != "cancelled"`,
-			fields: 'id,doctor'
+			fields: 'id,doctor',
+			...PB_NO_AUTO_CANCEL
 		});
 
 		for (const apt of items) {
@@ -477,8 +481,9 @@ function quickLinksFor(role: DashboardRoleView): QuickLink[] {
 	}
 	if (role === 'patient') {
 		return [
-			{ id: 'p1', label: 'رزرو نوبت', href: '/appointments/book', description: 'درخواست جلسه جدید', icon: 'book' },
-			{ id: 'p2', label: 'تست‌ها', href: '/tests', description: 'آزمون‌های روانشناسی', icon: 'tests' }
+			{ id: 'p1', label: 'نوبت‌های من', href: '/dashboard/appointments', description: 'مشاهده و ویرایش نوبت', icon: 'calendar' },
+			{ id: 'p2', label: 'رزرو نوبت', href: '/appointments/book', description: 'درخواست جلسه جدید', icon: 'book' },
+			{ id: 'p3', label: 'تست‌ها', href: '/tests', description: 'آزمون‌های روانشناسی', icon: 'tests' }
 		];
 	}
 	return [

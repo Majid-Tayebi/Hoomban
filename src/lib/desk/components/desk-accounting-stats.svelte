@@ -2,12 +2,12 @@
 	import MetricCard from '$lib/components/ui/metric-card.svelte';
 	import { formatToman } from '../types';
 	import type { DeskAccountingTotals } from '../types';
-	import { Users, AlertCircle, Wallet, Receipt } from '@lucide/svelte';
+	import { Users, AlertCircle, Wallet, Receipt, BadgePercent } from '@lucide/svelte';
 
 	let { totals }: { totals: DeskAccountingTotals } = $props();
 </script>
 
-<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-5">
 	<MetricCard
 		label="مراجعان"
 		value={totals.patientCount}
@@ -28,6 +28,13 @@
 		subtext="جمع دریافتی ثبت‌شده"
 		icon={Wallet}
 		tone="emerald"
+	/>
+	<MetricCard
+		label="بخشودگی‌ها"
+		formattedValue={formatToman(totals.totalWaived)}
+		subtext="جمع مبالغ بخشیده‌شده"
+		icon={BadgePercent}
+		tone="violet"
 	/>
 	<MetricCard
 		label="نوبت/خدمت پرداخت‌نشده"

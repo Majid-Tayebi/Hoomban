@@ -12,7 +12,8 @@
 		computeInstallmentPreview,
 		type PaymentMode
 	} from '../payment-plan';
-	import { recordPayment, markWaived, applyPaymentToAccounting } from '../services/accounting';
+	import { recordPayment, recordWaiver, applyPaymentToAccounting } from '../services/accounting';
+	import LedgerAmountCell from './ledger-amount-cell.svelte';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
 	import CardTitle from '$lib/components/ui/card-title.svelte';
@@ -47,8 +48,12 @@
 	let method = $state<PaymentMethod>('cash');
 	let notes = $state('');
 
+	let waivedAmount = $state(0);
+
 	const remainingDue = $derived(
-		selectedRow ? Math.max(0, selectedRow.expectedAmount - selectedRow.paidAmount) : 0
+		selectedRow
+			? Math.max(0, selectedRow.expectedAmount - selectedRow.paidAmount - selectedRow.waivedAmount)
+			: 0
 	);
 
 	const installmentPreview = $derived.by(() => {
@@ -67,7 +72,8 @@
 	function resetDialogState(row: LedgerRow) {
 		paymentMode = row.status === 'waived' ? 'waived' : 'full';
 		installmentCount = '2';
-		paidAmount = Math.max(0, row.expectedAmount - row.paidAmount) || 0;
+		paidAmount = Math.max(0, row.expectedAmount - row.paidAmount - row.waivedAmount) || 0;
+		waivedAmount = Math.max(0, row.expectedAmount - row.paidAmount - row.waivedAmount) || 0;
 		method = row.method || 'cash';
 		notes = row.notes || '';
 		saveError = '';
@@ -87,7 +93,11 @@
 		if (!selectedRow) return 'ردیف انتخاب نشده است.';
 		if (!userId) return 'کاربر وارد نشده است. دوباره وارد شوید.';
 
-		if (paymentMode === 'waived') return null;
+		if (paymentMode === 'waived') {
+			if (waivedAmount <= 0) return 'مبلغ بخشودگی را وارد کنید.';
+			if (waivedAmount > remainingDue) return 'مبلغ بخشودگی بیشتر از مانده حساب است.';
+			return null;
+		}
 
 		if (paymentMode === 'full') {
 			if (remainingDue <= 0) return 'مانده‌ای برای تسویه وجود ندارد.';
@@ -121,17 +131,28 @@
 					paymentMode === 'installment' ? (Number(installmentCount) as 2 | 3) : undefined,
 				installmentPaidThis:
 					paymentMode === 'installment' ? paidAmount : undefined,
-				remainingAfter: installmentPreview?.leftAfterFirst
+				remainingAfter: installmentPreview?.leftAfterFirst,
+				waivedAmount: paymentMode === 'waived' ? waivedAmount : undefined,
+				remainingAfterWaiver:
+					paymentMode === 'waived' ? Math.max(0, remainingDue - waivedAmount) : undefined
 			});
 
-			let saved: { transactionId: string; status: PaymentStatus; paidAmount: number };
+			let saved: {
+				transactionId: string;
+				status: PaymentStatus;
+				paidAmount: number;
+				waivedAmount: number;
+			};
 
 			if (paymentMode === 'waived') {
-				saved = await markWaived({
+				saved = await recordWaiver({
 					patientUserId,
 					appointmentId: selectedRow.appointmentId,
 					title: selectedRow.title,
 					expectedAmount: selectedRow.expectedAmount,
+					currentPaidAmount: selectedRow.paidAmount,
+					currentWaivedAmount: selectedRow.waivedAmount,
+					waivedAmountThisTime: waivedAmount,
 					userId,
 					transactionId: selectedRow.transactionId,
 					notes: paymentNotes
@@ -158,7 +179,9 @@
 			dialogOpen = false;
 			saveSuccess =
 				paymentMode === 'waived'
-					? 'بخشودگی با موفقیت ثبت شد.'
+					? waivedAmount >= remainingDue
+						? 'بخشودگی کامل ثبت شد.'
+						: 'بخشودگی جزئی ثبت شد.'
 					: paymentMode === 'installment'
 						? 'قسط اول با موفقیت ثبت شد.'
 						: 'تسویه کامل با موفقیت ثبت شد.';
@@ -193,6 +216,8 @@
 		if (!selectedRow || !dialogOpen) return;
 		if (paymentMode === 'full') {
 			paidAmount = remainingDue;
+		} else if (paymentMode === 'waived') {
+			waivedAmount = remainingDue;
 		}
 	});
 </script>
@@ -209,10 +234,16 @@
 		<div class="mb-3 grid grid-cols-2 gap-2 px-1 sm:grid-cols-4 sm:px-0">
 			<div class="rounded-xl bg-muted/40 px-3 py-2">
 				<p class="text-[11px] text-muted-foreground">مانده حساب</p>
-				<p class="mt-0.5 text-sm font-semibold">{formatToman(accounting.summary.balance)}</p>
+				<p
+					class="mt-0.5 text-sm font-semibold {accounting.summary.balance > 0
+						? 'text-red-600 dark:text-red-400'
+						: 'text-muted-foreground'}"
+				>
+					{formatToman(accounting.summary.balance)}
+				</p>
 			</div>
 			<div class="rounded-xl bg-muted/40 px-3 py-2">
-				<p class="text-[11px] text-muted-foreground">پرداخت‌شده</p>
+				<p class="text-[11px] text-muted-foreground">درآمد ثبت‌شده</p>
 				<p class="mt-0.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
 					{formatToman(accounting.summary.totalPaid)}
 				</p>
@@ -223,8 +254,22 @@
 			</div>
 			<div class="rounded-xl bg-muted/40 px-3 py-2">
 				<p class="text-[11px] text-muted-foreground">بدهی باز</p>
-				<p class="mt-0.5 text-sm font-semibold">{accounting.summary.unpaidCount.toLocaleString('fa-IR')} مورد</p>
+				<p
+					class="mt-0.5 text-sm font-semibold {accounting.summary.unpaidCount > 0
+						? 'text-amber-700 dark:text-amber-300'
+						: 'text-muted-foreground'}"
+				>
+					{accounting.summary.unpaidCount.toLocaleString('fa-IR')} مورد
+				</p>
 			</div>
+			{#if accounting.summary.totalWaived > 0}
+				<div class="col-span-2 rounded-xl bg-muted/40 px-3 py-2 sm:col-span-4">
+					<p class="text-[11px] text-muted-foreground">جمع بخشودگی ثبت‌شده</p>
+					<p class="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-300">
+						{formatToman(accounting.summary.totalWaived)}
+					</p>
+				</div>
+			{/if}
 		</div>
 
 		{#if saveSuccess}
@@ -255,14 +300,7 @@
 							>
 								<p class="min-w-0 truncate text-sm font-medium">{row.title}</p>
 								<p class="min-w-0 truncate text-sm text-muted-foreground">{formatDate(row.date)}</p>
-								<div class="min-w-0 text-sm">
-									<p class="font-medium">{formatToman(row.expectedAmount)}</p>
-									{#if row.paidAmount > 0}
-										<p class="text-[11px] text-emerald-600">
-											پرداخت: {formatToman(row.paidAmount)}
-										</p>
-									{/if}
-								</div>
+								<LedgerAmountCell {row} />
 								<span
 									class="inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-medium {paymentStatusClass(
 										row.status
@@ -316,7 +354,7 @@
 								{PAYMENT_STATUS_LABELS[row.status]}
 							</span>
 						</div>
-						<p class="mt-2 text-sm font-medium">{formatToman(row.expectedAmount)}</p>
+						<LedgerAmountCell {row} compact />
 						{#if row.status !== 'paid' && row.status !== 'waived'}
 							<Button
 								size="sm"
@@ -362,6 +400,11 @@
 							پرداخت‌شده قبلی: {formatToman(selectedRow.paidAmount)}
 						</p>
 					{/if}
+					{#if selectedRow.waivedAmount > 0}
+						<p class="mt-1 text-[11px] text-muted-foreground">
+							بخشودگی قبلی: {formatToman(selectedRow.waivedAmount)}
+						</p>
+					{/if}
 				</div>
 
 				{#if paymentMode === 'installment'}
@@ -401,9 +444,29 @@
 						/>
 					</div>
 				{:else}
-					<p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-						کل مانده ({formatToman(remainingDue)}) بخشیده می‌شود و در حساب مراجع ثبت نمی‌گردد.
-					</p>
+					<div>
+						<label for="waived-amount" class="mb-1.5 block text-xs font-medium text-muted-foreground">
+							مبلغ بخشودگی (تومان)
+						</label>
+						<MoneyInput
+							id="waived-amount"
+							bind:value={waivedAmount}
+							placeholder="مثلاً 200,000"
+							class="rounded-xl"
+						/>
+					</div>
+					{#if waivedAmount >= remainingDue && remainingDue > 0}
+						<p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+							کل مانده ({formatToman(remainingDue)}) بخشیده می‌شود.
+						</p>
+					{:else if waivedAmount > 0}
+						<p class="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+							پس از این بخشودگی، مانده مراجع:
+							<span class="font-semibold text-foreground">
+								{formatToman(Math.max(0, remainingDue - waivedAmount))}
+							</span>
+						</p>
+					{/if}
 				{/if}
 
 				{#if paymentMode === 'installment' && installmentPreview}

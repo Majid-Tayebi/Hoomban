@@ -86,17 +86,41 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
 	const data: PushPayload = event.data ? event.data.json() : {};
 	const title = data.title || 'هومبان';
-	const options: NotificationOptions = {
-		body: data.body || '',
-		icon: ICON,
-		badge: ICON,
-		tag: data.tag || 'hoomban-notification',
-		data: { href: data.href || '/dashboard' },
-		dir: 'rtl',
-		lang: 'fa'
-	};
+	const body = data.body || '';
+	const href = data.href || '/dashboard';
+	const tag = data.tag || 'hoomban-notification';
 
-	event.waitUntil(self.registration.showNotification(title, options));
+	event.waitUntil(
+		(async () => {
+			const windowClients = await self.clients.matchAll({
+				type: 'window',
+				includeUncontrolled: true
+			});
+			const visibleClient = windowClients.find(
+				(client) =>
+					'visibilityState' in client &&
+					(client as WindowClient).visibilityState === 'visible'
+			);
+
+			if (visibleClient) {
+				visibleClient.postMessage({
+					type: 'hoomban-push',
+					payload: { title, body, href, tag }
+				});
+				return;
+			}
+
+			await self.registration.showNotification(title, {
+				body,
+				icon: ICON,
+				badge: ICON,
+				tag,
+				data: { href },
+				dir: 'rtl',
+				lang: 'fa'
+			});
+		})()
+	);
 });
 
 self.addEventListener('notificationclick', (event) => {

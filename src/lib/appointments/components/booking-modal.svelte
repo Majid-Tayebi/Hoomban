@@ -50,7 +50,7 @@
 {#if open}
 	<Dialog
 		bind:open
-		class="max-h-[min(90dvh,820px)] w-[min(56rem,calc(100vw-2rem))] max-w-4xl overflow-hidden p-0 sm:p-0"
+		class="max-h-[min(90dvh,820px)] min-h-[min(72dvh,640px)] w-[min(56rem,calc(100vw-2rem))] max-w-4xl overflow-hidden p-0 sm:p-0"
 	>
 		{#if Wizard}
 			{#key sessionKey}

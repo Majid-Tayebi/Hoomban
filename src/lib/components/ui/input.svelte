@@ -68,7 +68,7 @@
 	}
 </script>
 
-<div class="relative inline-flex max-w-full">
+<div class="relative flex w-full max-w-full">
 	{#if LeftIcon}
 		<div
 			class={cn(

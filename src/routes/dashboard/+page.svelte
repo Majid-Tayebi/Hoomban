@@ -48,6 +48,7 @@
 					title={data.appointmentsTitle}
 					variant={tableVariant}
 					clickablePatients={canNavigateToPatientFromAppointment(data.role)}
+					navigateToAppointments={data.role === 'patient'}
 					inProgress={data.role === 'secretary'}
 				/>
 			{/if}

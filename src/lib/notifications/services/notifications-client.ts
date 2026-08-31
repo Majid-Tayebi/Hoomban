@@ -1,5 +1,6 @@
 import { pb } from '$lib/pocketbase';
 import { mapNotificationRecord, type NotificationRecord } from '$lib/notifications/types';
+import { sortNotificationsNewestFirst } from '$lib/notifications/sort';
 
 function authHeaders(): HeadersInit {
 	const token = pb.authStore.token;
@@ -20,7 +21,7 @@ export async function fetchNotifications(limit = 30): Promise<NotificationRecord
 	});
 	if (!res.ok) return [];
 	const data = (await res.json()) as { items?: NotificationRecord[] };
-	return data.items ?? [];
+	return sortNotificationsNewestFirst(data.items ?? []);
 }
 
 export async function markNotificationRead(id: string): Promise<boolean> {
@@ -39,6 +40,16 @@ export async function markAllNotificationsRead(): Promise<boolean> {
 	return res.ok;
 }
 
+function recordRecipientId(record: Record<string, unknown> | undefined): string | null {
+	if (!record) return null;
+	const recipient = record.recipient;
+	if (typeof recipient === 'string') return recipient;
+	if (recipient && typeof recipient === 'object' && 'id' in recipient) {
+		return String((recipient as { id?: string }).id || '');
+	}
+	return null;
+}
+
 export function subscribeNotifications(userId: string, onChange: () => void): () => void {
 	if (!userId || userId === 'demo-user') return () => {};
 
@@ -46,8 +57,9 @@ export function subscribeNotifications(userId: string, onChange: () => void): ()
 
 	void pb
 		.collection('notifications')
-		.subscribe(`recipient = "${userId}"`, () => {
-			onChange();
+		.subscribe('*', (e) => {
+			const recipientId = recordRecipientId(e.record as Record<string, unknown> | undefined);
+			if (recipientId === userId) onChange();
 		})
 		.then((fn) => {
 			unsub = fn;

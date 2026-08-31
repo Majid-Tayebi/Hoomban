@@ -9,6 +9,7 @@
 	import GlobalSearchPanel from '$lib/components/global-search-panel.svelte';
 	import DashboardUpdateBanner from '$lib/components/dashboard-update-banner.svelte';
 	import NotificationBell from '$lib/components/notification-bell.svelte';
+	import NotificationToastStack from '$lib/components/notification-toast-stack.svelte';
 	import SidebarBody from '$lib/components/ui/sidebar-body.svelte';
 	import AppSidebar, { type AppNavGroup } from '$lib/components/app-sidebar.svelte';
 	import {
@@ -21,7 +22,11 @@
 		UserCog,
 		Search
 	} from '@lucide/svelte';
-	import { bindNotifications, stopNotifications } from '$lib/notifications/notifications.svelte';
+	import {
+		bindNotifications,
+		bindServiceWorkerPush,
+		stopNotifications
+	} from '$lib/notifications/notifications.svelte';
 	import { initPushForUser } from '$lib/push/push.svelte';
 	import PushEnablePrompt from '$lib/push/components/push-enable-prompt.svelte';
 	import { pb } from '$lib/pocketbase';
@@ -52,7 +57,11 @@
 		if (!pb.authStore.isValid) return;
 		bindNotifications(user.id);
 		void initPushForUser(user.id);
-		return () => stopNotifications();
+		const unbindPush = bindServiceWorkerPush();
+		return () => {
+			unbindPush();
+			stopNotifications();
+		};
 	});
 
 	function logout() {
@@ -111,7 +120,8 @@
 		}
 		return [
 			{ icon: LayoutDashboard, label: 'داشبورد', path: '/dashboard' },
-			{ icon: Calendar, label: 'نوبت', path: '/appointments/book' },
+			{ icon: CalendarDays, label: 'نوبت‌ها', path: '/dashboard/appointments' },
+			{ icon: Calendar, label: 'رزرو', path: '/appointments/book' },
 			{ icon: ClipboardList, label: 'تست‌ها', path: '/tests' }
 		];
 	});
@@ -194,7 +204,8 @@
 				label: 'شروع',
 				items: [
 					{ title: 'داشبورد', href: '/dashboard' },
-					{ title: 'نوبت‌دهی', href: '/appointments/book' },
+					{ title: 'نوبت‌های من', href: '/dashboard/appointments' },
+					{ title: 'رزرو نوبت', href: '/appointments/book' },
 					{ title: 'تست‌های روانشناسی', href: '/tests' }
 				]
 			}
@@ -313,6 +324,8 @@
 		</nav>
 
 		<PushEnablePrompt />
+
+		<NotificationToastStack />
 	</div>
 {:else}
 	<div class="flex min-h-dvh items-center justify-center bg-background">

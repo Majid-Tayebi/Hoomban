@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import { getAuthUserFromRequest } from '$lib/server/request-auth';
 import { getAdminPb, PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
 import { mapNotificationRecord } from '$lib/notifications/types';
+import { sortNotificationsNewestFirst } from '$lib/notifications/sort';
 
-/** PocketBase rejects `sort: '-created'` on notifications — sort after fetch. */
 type NotifRow = {
 	id: string;
 	type?: string;
@@ -17,12 +17,6 @@ type NotifRow = {
 	created?: string;
 };
 
-function sortNewestFirst(items: NotifRow[]): NotifRow[] {
-	return [...items].sort(
-		(a, b) => new Date(String(b.created || 0)).getTime() - new Date(String(a.created || 0)).getTime()
-	);
-}
-
 export const GET: RequestHandler = async ({ request, url }) => {
 	const user = await getAuthUserFromRequest(request);
 	if (!user) {
@@ -33,26 +27,27 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	try {
 		const pb = await getAdminPb();
-		const result = await pb.collection('notifications').getList(1, limit, {
+		const rows = await pb.collection('notifications').getFullList({
 			filter: `recipient = "${user.id}"`,
+			sort: '-created',
 			...PB_NO_AUTO_CANCEL
 		});
 
-		const items = sortNewestFirst(
-			result.items.map((r) => r as unknown as NotifRow)
-		).map((r) =>
-			mapNotificationRecord({
-				id: r.id,
-				type: r.type,
-				title: r.title,
-				body: r.body,
-				href: r.href,
-				read_at: r.read_at,
-				priority: r.priority,
-				metadata: r.metadata,
-				created: r.created
-			})
-		);
+		const items = sortNotificationsNewestFirst(rows.map((r) => r as unknown as NotifRow))
+			.slice(0, limit)
+			.map((r) =>
+				mapNotificationRecord({
+					id: r.id,
+					type: r.type,
+					title: r.title,
+					body: r.body,
+					href: r.href,
+					read_at: r.read_at,
+					priority: r.priority,
+					metadata: r.metadata,
+					created: r.created
+				})
+			);
 
 		return json({ items });
 	} catch (err: unknown) {

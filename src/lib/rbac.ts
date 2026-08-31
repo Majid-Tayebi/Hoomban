@@ -7,7 +7,7 @@ export type RouteAccess = {
 
 /** Dashboard sub-routes and allowed roles. Patients are blocked from staff modules. */
 export const DASHBOARD_ROUTE_ACCESS: RouteAccess[] = [
-	{ path: '/dashboard/appointments', roles: ['admin', 'secretary', 'doctor'] },
+	{ path: '/dashboard/appointments', roles: ['admin', 'secretary', 'doctor', 'patient'] },
 	{ path: '/dashboard/calendar', roles: ['admin', 'secretary'] },
 	{ path: '/dashboard/desk', roles: ['admin', 'secretary'] },
 	{ path: '/dashboard/patients', roles: ['admin', 'doctor'] },
@@ -75,12 +75,24 @@ export function canNavigateToPatientFromAppointment(role?: string | null): boole
 }
 
 /** Route to open a patient file based on role. */
-export function getPatientRecordHref(patientUserId: string, role?: string | null): string {
+export type PatientRecordFrom = 'accounting' | 'appointments';
+
+export function getPatientRecordHref(
+	patientUserId: string,
+	role?: string | null,
+	from?: PatientRecordFrom
+): string {
+	let href: string;
 	if (canAccessPatientRecord(role)) {
-		return `/dashboard/patients/${patientUserId}`;
+		href = `/dashboard/patients/${patientUserId}`;
+	} else if (canAccessSecretaryPatientDesk(role)) {
+		href = `/dashboard/desk/patients/${patientUserId}`;
+	} else {
+		return '/dashboard';
 	}
-	if (canAccessSecretaryPatientDesk(role)) {
-		return `/dashboard/desk/patients/${patientUserId}`;
+
+	if (from && canAccessSecretaryPatientDesk(role)) {
+		return `${href}?from=${from}`;
 	}
-	return '/dashboard';
+	return href;
 }

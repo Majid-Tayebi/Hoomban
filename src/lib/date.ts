@@ -44,6 +44,31 @@ export function formatFaDateTime(d: Date): string {
 	return `${formatFaDate(d)} — ${formatFaTime(d)}`;
 }
 
+/** Relative time for feeds (notifications, messages). */
+export function formatRelativeFa(iso: string): string {
+	const d = new Date(iso);
+	if (Number.isNaN(d.getTime())) return '';
+
+	const now = Date.now();
+	const diffMs = now - d.getTime();
+	if (diffMs < 0) return formatFaDateTime(d);
+
+	const diffMin = Math.floor(diffMs / 60_000);
+	if (diffMin < 1) return 'همین الان';
+	if (diffMin < 60) return `${diffMin.toLocaleString('fa-IR')} دقیقه پیش`;
+
+	const diffHours = Math.floor(diffMin / 60);
+	if (diffHours < 24) return `${diffHours.toLocaleString('fa-IR')} ساعت پیش`;
+
+	const startToday = startOfDay(new Date());
+	const startMsg = startOfDay(d);
+	const diffDays = Math.round((startToday.getTime() - startMsg.getTime()) / 86_400_000);
+	if (diffDays === 0) return 'امروز';
+	if (diffDays === 1) return 'دیروز';
+	if (diffDays < 7) return `${diffDays.toLocaleString('fa-IR')} روز پیش`;
+	return formatFaDate(d);
+}
+
 export function formatFaDigits(n: number): string {
 	return n.toLocaleString('fa-IR', { useGrouping: false });
 }

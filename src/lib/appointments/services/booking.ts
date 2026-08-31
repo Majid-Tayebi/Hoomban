@@ -103,7 +103,8 @@ export function isDoctorWorkingOn(doctor: BookingDoctor, date: Date): boolean {
 
 export async function loadAvailableSlots(
 	doctor: BookingDoctor,
-	selectedDate: Date
+	selectedDate: Date,
+	options?: { excludeAppointmentId?: string }
 ): Promise<BookingSlot[]> {
 	const ranges = resolveScheduleForDate(selectedDate, doctor.scheduleDates, doctor.workingDays);
 	if (!ranges.length) return [];
@@ -136,11 +137,14 @@ export async function loadAvailableSlots(
 		...PB_NO_AUTO_CANCEL
 	});
 
+	const excludeId = options?.excludeAppointmentId;
 	const busyTimes = new Set(
-		busySlots.items.map((apt) => {
-			const aptDate = new Date(String(apt.date_time));
-			return `${aptDate.getHours().toString().padStart(2, '0')}:${aptDate.getMinutes().toString().padStart(2, '0')}`;
-		})
+		busySlots.items
+			.filter((apt) => !excludeId || apt.id !== excludeId)
+			.map((apt) => {
+				const aptDate = new Date(String(apt.date_time));
+				return `${aptDate.getHours().toString().padStart(2, '0')}:${aptDate.getMinutes().toString().padStart(2, '0')}`;
+			})
 	);
 
 	return slots.filter((slot) => !busyTimes.has(slot.time));
@@ -235,20 +239,24 @@ async function getFallbackDoctorId(): Promise<string> {
 	return doctors[0].id;
 }
 
+export function slotToIsoDateTime(slot: BookingSlot): string {
+	const appointmentDateTime = new Date(slot.date);
+	const [hours, minutes] = slot.time.split(':').map(Number);
+	appointmentDateTime.setHours(hours, minutes, 0, 0);
+	return appointmentDateTime.toISOString();
+}
+
 export async function createServiceAppointment(params: {
 	patientId: string;
 	service: BookingService;
 	slot: BookingSlot;
 }): Promise<void> {
 	const doctorId = await getFallbackDoctorId();
-	const appointmentDateTime = new Date(params.slot.date);
-	const [hours, minutes] = params.slot.time.split(':').map(Number);
-	appointmentDateTime.setHours(hours, minutes, 0, 0);
 
 	await createAppointmentViaApi({
 		patientId: params.patientId,
 		doctorId,
-		dateTime: appointmentDateTime.toISOString(),
+		dateTime: slotToIsoDateTime(params.slot),
 		type: 'service',
 		notesPublic: formatServiceNote(params.service)
 	});
@@ -259,14 +267,10 @@ export async function createInPersonAppointment(params: {
 	doctorId: string;
 	slot: BookingSlot;
 }): Promise<void> {
-	const appointmentDateTime = new Date(params.slot.date);
-	const [hours, minutes] = params.slot.time.split(':').map(Number);
-	appointmentDateTime.setHours(hours, minutes, 0, 0);
-
 	await createAppointmentViaApi({
 		patientId: params.patientId,
 		doctorId: params.doctorId,
-		dateTime: appointmentDateTime.toISOString(),
+		dateTime: slotToIsoDateTime(params.slot),
 		type: 'in_person'
 	});
 }

@@ -13,6 +13,7 @@ export {
 	loadDeskAccountingOverview,
 	fetchPaymentsTotal,
 	recordPayment,
+	recordWaiver,
 	markWaived,
 	applyPaymentToAccounting
 } from './services/accounting';

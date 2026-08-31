@@ -62,9 +62,9 @@
 		</span>
 		<div class="min-w-0 flex-1 space-y-3 text-right">
 			<div>
-				<h3 class="text-sm font-semibold">اعلان Web Push (PWA)</h3>
+				<h3 class="text-sm font-semibold">اعلان مرورگر (Web Push)</h3>
 				<p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-					دریافت اعلان نوبت و رویدادها حتی وقتی تب مرورگر بسته است.
+					داخل پنل اعلان‌ها خودکار نمایش داده می‌شوند. این گزینه برای دریافت اعلان وقتی تب بسته است.
 				</p>
 			</div>
 

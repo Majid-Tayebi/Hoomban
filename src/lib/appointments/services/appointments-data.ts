@@ -162,12 +162,16 @@ async function fetchAppointments(user: AppointmentsUser): Promise<AppointmentLis
 				...PB_NO_AUTO_CANCEL
 			});
 			if (dr.items.length) filter = `doctor = "${dr.items[0].id}"`;
+		} else if (user.role === 'patient') {
+			filter = `patient = "${user.id}"`;
 		}
 
-		const result = await pb.collection('appointments').getList(1, 50, {
+		const limit = user.role === 'patient' || user.role === 'doctor' ? 50 : 200;
+
+		const result = await pb.collection('appointments').getList(1, limit, {
 			filter,
 			sort: '-date_time',
-			expand: 'patient,doctor,doctor.user',
+			expand: 'patient,doctor',
 			...PB_NO_AUTO_CANCEL
 		});
 
@@ -194,6 +198,7 @@ async function fetchAppointments(user: AppointmentsUser): Promise<AppointmentLis
 				patientId,
 				phone: exp.patient?.mobile || '—',
 				doctorName: exp.doctor?.display_name || exp.doctor?.expand?.user?.name || 'روانشناس',
+				doctorId: String(apt.doctor || ''),
 				specialty: exp.doctor?.specialty || 'روانشناسی',
 				type: typeInfo.label,
 				typeKey: typeInfo.key,
@@ -202,7 +207,8 @@ async function fetchAppointments(user: AppointmentsUser): Promise<AppointmentLis
 				status: mapStatus(String(apt.status))
 			};
 		});
-	} catch {
+	} catch (err) {
+		console.error('fetchAppointments failed:', err);
 		return [];
 	}
 }

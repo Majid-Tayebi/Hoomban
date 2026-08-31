@@ -39,6 +39,7 @@ export interface DashboardAppointment {
 	patientUserId: string;
 	phone: string;
 	doctorName: string;
+	doctorId: string;
 	specialty: string;
 	type: string;
 	dateTime: Date;

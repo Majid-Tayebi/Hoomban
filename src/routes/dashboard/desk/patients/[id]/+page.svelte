@@ -14,6 +14,12 @@
 
 	let user = $derived(getUser());
 	let patientId = $derived($page.params.id);
+	let fromSource = $derived($page.url.searchParams.get('from'));
+
+	const backHref = $derived(
+		fromSource === 'accounting' ? '/dashboard/desk/accounting' : '/dashboard/appointments'
+	);
+	const backLabel = $derived(fromSource === 'accounting' ? 'حسابداری' : 'نوبت‌ها');
 
 	let data = $state<PatientDeskData | null>(null);
 	let loading = $state(true);
@@ -63,10 +69,10 @@
 		<button
 			type="button"
 			class="inline-flex items-center gap-1 transition-colors duration-200 hover:text-foreground"
-			onclick={() => goto('/dashboard/appointments')}
+			onclick={() => goto(backHref)}
 		>
 			<ArrowRight class="h-4 w-4" />
-			نوبت‌ها
+			{backLabel}
 		</button>
 		<span>/</span>
 		<span class="font-medium text-foreground">پرونده مراجع (منشی)</span>

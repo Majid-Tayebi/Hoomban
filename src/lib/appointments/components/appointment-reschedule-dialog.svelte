@@ -1,14 +1,13 @@
 <script lang="ts">
 	import type { AppointmentListItem } from '../types';
+	import type { BookingDoctor, BookingSlot } from '../booking-types';
+	import { loadBookingDoctors, slotToIsoDateTime } from '../services/booking';
 	import { rescheduleAppointment } from '../services/appointment-actions';
+	import BookingDatetimePanel from './booking-datetime-panel.svelte';
 	import Dialog from '$lib/components/ui/dialog.svelte';
 	import Button from '$lib/components/ui/button.svelte';
-	import Input from '$lib/components/ui/input.svelte';
-	import Label from '$lib/components/ui/label.svelte';
-	import { formatFaDate, formatFaTime, toIsoDateString } from '$lib/date';
+	import { formatFaDate, formatFaTime } from '$lib/date';
 	import { LoaderCircle } from '@lucide/svelte';
-
-	type JalaliDatePickerComponent = typeof import('$lib/components/ui/jalali-date-picker.svelte').default;
 
 	let {
 		open = $bindable(false),
@@ -20,55 +19,41 @@
 		onSaved?: () => void | Promise<void>;
 	} = $props();
 
-	let isoDate = $state('');
-	let timeValue = $state('');
+	let doctor = $state<BookingDoctor | null>(null);
+	let loadingDoctor = $state(false);
+	let selectedDate = $state(new Date());
+	let selectedSlot = $state<BookingSlot | null>(null);
 	let saving = $state(false);
 	let error = $state('');
-	let JalaliDatePickerCmp = $state<JalaliDatePickerComponent | null>(null);
 
 	$effect(() => {
 		if (!open || !appointment) return;
-		isoDate = toIsoDateString(appointment.dateTime);
-		timeValue = appointment.dateTime.toLocaleTimeString('en-GB', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		});
+		selectedDate = new Date(appointment.dateTime);
+		selectedSlot = null;
 		error = '';
+		loadingDoctor = true;
+		doctor = null;
+		void loadBookingDoctors()
+			.then((list) => {
+				doctor = list.find((d) => d.id === appointment?.doctorId) ?? null;
+			})
+			.catch(() => {
+				doctor = null;
+			})
+			.finally(() => {
+				loadingDoctor = false;
+			});
 	});
-
-	$effect(() => {
-		if (!open) return;
-		if (JalaliDatePickerCmp) return;
-		void import('$lib/components/ui/jalali-date-picker.svelte').then((mod) => {
-			JalaliDatePickerCmp = mod.default;
-		});
-	});
-
-	function combineDateTime(): string | null {
-		if (!isoDate || !timeValue) return null;
-		const match = /^(\d{2}):(\d{2})$/.exec(timeValue.trim());
-		if (!match) return null;
-		const [y, m, d] = isoDate.split('-').map(Number);
-		const hours = Number(match[1]);
-		const minutes = Number(match[2]);
-		if (!y || !m || !d) return null;
-		const dt = new Date(y, m - 1, d, hours, minutes, 0, 0);
-		if (Number.isNaN(dt.getTime())) return null;
-		return dt.toISOString();
-	}
 
 	async function submit() {
-		if (!appointment) return;
-		const dateTime = combineDateTime();
-		if (!dateTime) {
-			error = 'تاریخ و ساعت را کامل وارد کنید.';
+		if (!appointment || !selectedSlot) {
+			error = 'زمان جدید را از لیست ساعات آزاد انتخاب کنید.';
 			return;
 		}
 		saving = true;
 		error = '';
 		try {
-			await rescheduleAppointment(appointment.id, dateTime);
+			await rescheduleAppointment(appointment.id, slotToIsoDateTime(selectedSlot));
 			open = false;
 			appointment = null;
 			await onSaved?.();
@@ -80,7 +65,7 @@
 	}
 </script>
 
-<Dialog bind:open class="max-w-md">
+<Dialog bind:open class="max-w-2xl">
 	<div class="space-y-4 text-right">
 		<div>
 			<h3 class="text-base font-semibold">تغییر زمان نوبت</h3>
@@ -95,25 +80,20 @@
 			{/if}
 		</div>
 
-		<div class="space-y-3">
-			<div class="space-y-1.5">
-				<Label for="reschedule-date">تاریخ جدید</Label>
-				{#if JalaliDatePickerCmp}
-					<JalaliDatePickerCmp
-						id="reschedule-date"
-						bind:value={isoDate}
-						placeholder="انتخاب تاریخ"
-						class="w-full"
-					/>
-				{:else}
-					<p class="text-xs text-muted-foreground">در حال بارگذاری تقویم...</p>
-				{/if}
-			</div>
-			<div class="space-y-1.5">
-				<Label for="reschedule-time">ساعت جدید</Label>
-				<Input id="reschedule-time" type="time" bind:value={timeValue} dir="ltr" class="rounded-xl" />
-			</div>
-		</div>
+		{#if loadingDoctor}
+			<p class="py-8 text-center text-sm text-muted-foreground">در حال بارگذاری برنامه متخصص...</p>
+		{:else if !doctor}
+			<p class="rounded-xl border border-dashed border-border/70 px-4 py-8 text-center text-sm text-muted-foreground">
+				اطلاعات متخصص یافت نشد.
+			</p>
+		{:else}
+			<BookingDatetimePanel
+				{doctor}
+				bind:selectedDate
+				bind:selectedSlot
+				excludeAppointmentId={appointment?.id ?? null}
+			/>
+		{/if}
 
 		{#if error}
 			<p class="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
@@ -132,7 +112,7 @@
 			>
 				انصراف
 			</Button>
-			<Button size="sm" class="rounded-xl" disabled={saving} onclick={submit}>
+			<Button size="sm" class="rounded-xl" disabled={saving || !selectedSlot} onclick={submit}>
 				{#if saving}
 					<LoaderCircle class="ml-1.5 h-4 w-4 animate-spin" />
 				{/if}

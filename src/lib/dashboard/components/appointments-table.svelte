@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { getUser } from '$lib/auth.svelte';
-	import { getPatientRecordHref } from '$lib/rbac';
+	import { getPatientRecordHref, canAccessSecretaryPatientDesk } from '$lib/rbac';
 	import Badge from '$lib/components/ui/badge.svelte';
 	import Button from '$lib/components/ui/button.svelte';
 	import type { DashboardAppointment, AppointmentStatus } from '../types';
@@ -15,6 +15,7 @@
 		title = 'نوبت‌ها',
 		variant = 'clinic',
 		clickablePatients = false,
+		navigateToAppointments = false,
 		viewAllHref = '/dashboard/appointments',
 		inProgress = false
 	}: {
@@ -23,6 +24,7 @@
 		title?: string;
 		variant?: 'clinic' | 'patient' | 'doctor';
 		clickablePatients?: boolean;
+		navigateToAppointments?: boolean;
 		viewAllHref?: string;
 		inProgress?: boolean;
 	} = $props();
@@ -32,7 +34,13 @@
 
 	function openPatient(patientUserId: string) {
 		if (!clickablePatients || !patientUserId || !user) return;
-		goto(getPatientRecordHref(patientUserId, user.role));
+		goto(
+			getPatientRecordHref(
+				patientUserId,
+				user.role,
+				canAccessSecretaryPatientDesk(user.role) ? 'appointments' : undefined
+			)
+		);
 	}
 
 	const statusConfig: Record<
@@ -89,8 +97,17 @@
 		return isToday(date) ? 'امروز' : formatFaDate(date);
 	}
 
-	function rowInteractive(patientUserId: string): boolean {
+	function rowInteractive(patientUserId: string, appointmentId: string): boolean {
+		if (navigateToAppointments && variant === 'patient' && appointmentId) return true;
 		return clickablePatients && Boolean(patientUserId);
+	}
+
+	function handleRowClick(apt: DashboardAppointment) {
+		if (navigateToAppointments && variant === 'patient') {
+			goto(`/dashboard/appointments?appointment=${apt.id}`);
+			return;
+		}
+		openPatient(apt.patientUserId);
 	}
 
 	type StatusStyle = (typeof statusConfig)[AppointmentStatus];
@@ -209,13 +226,13 @@
 		<ul class="divide-y divide-border/40">
 			{#each appointments as apt (apt.id)}
 				{@const status = statusConfig[apt.status]}
-				{@const interactive = rowInteractive(apt.patientUserId)}
+				{@const interactive = rowInteractive(apt.patientUserId, apt.id)}
 				<li>
 					{#if interactive}
 						<button
 							type="button"
-							class="relative flex w-full gap-3 px-4 py-3.5 text-start transition-colors duration-200 hover:bg-muted/30 sm:gap-4 sm:px-5 sm:py-4"
-							onclick={() => openPatient(apt.patientUserId)}
+							class="relative flex w-full cursor-pointer gap-3 px-4 py-3.5 text-start transition-colors duration-200 hover:bg-muted/30 sm:gap-4 sm:px-5 sm:py-4"
+							onclick={() => handleRowClick(apt)}
 						>
 							{@render appointmentRow(apt, status)}
 						</button>

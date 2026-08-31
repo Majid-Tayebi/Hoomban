@@ -51,7 +51,7 @@ async function notifyAppointmentEvent(
 
 	const exp = (apt.expand ?? {}) as AppointmentExpand;
 	const when = formatWhen(String(apt.date_time));
-	const href = '/dashboard/appointments';
+	const href = `/dashboard/appointments?appointment=${appointmentId}`;
 
 	const patientId = exp.patient?.id ? String(exp.patient.id) : null;
 	const doctorUser = doctorUserId(exp);

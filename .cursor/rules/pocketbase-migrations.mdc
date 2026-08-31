@@ -1,0 +1,21 @@
+---
+description: Restart PocketBase after schema migrations without asking the user
+alwaysApply: true
+---
+
+# PocketBase Migrations
+
+When you add or change files under `pocketbase/pb_migrations/`:
+
+1. **Restart PocketBase yourself** — do not tell the user to restart manually.
+2. Stop any running `pocketbase.exe` on port `8090`, then run migrations and serve:
+
+```powershell
+Get-Process pocketbase -ErrorAction SilentlyContinue | Stop-Process -Force
+cd F:\Projects\Hoomban\pocketbase
+.\pocketbase.exe migrate
+.\pocketbase.exe serve --http=127.0.0.1:8090
+```
+
+3. Run the serve command in the background and confirm `http://127.0.0.1:8090/api/health` responds.
+4. Only mention restart to the user if the command fails and you cannot recover.

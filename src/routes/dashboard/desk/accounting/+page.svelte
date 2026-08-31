@@ -19,7 +19,8 @@
 		patientCount: 0,
 		totalBalance: 0,
 		totalUnpaidItems: 0,
-		totalPaid: 0
+		totalPaid: 0,
+		totalWaived: 0
 	});
 	let loading = $state(true);
 
@@ -48,7 +49,7 @@
 
 	function openPatient(id: string) {
 		if (!user) return;
-		goto(getPatientRecordHref(id, user.role));
+		goto(getPatientRecordHref(id, user.role, 'accounting'));
 	}
 
 	function formatDate(d?: Date): string {
@@ -57,7 +58,7 @@
 	}
 
 	const gridClass =
-		'grid-cols-[minmax(9.5rem,1.2fr)_11.5rem_minmax(8.5rem,1.05fr)_9.5rem_6.5rem]';
+		'grid-cols-[minmax(9rem,1.15fr)_10.5rem_minmax(7.5rem,0.95fr)_minmax(6.5rem,0.85fr)_minmax(6.5rem,0.85fr)_5rem]';
 	const phoneColumnClass = 'flex min-w-0 w-full justify-end pe-6 ps-4';
 	const phoneCellClass =
 		`${phoneColumnClass} truncate text-sm tabular-nums text-muted-foreground`;
@@ -96,16 +97,17 @@
 				</p>
 			{:else}
 				<div class="hidden overflow-x-auto md:block">
-					<div class="min-w-[760px]">
+					<div class="min-w-[860px]">
 						<div
 							class={cn(
-								'grid items-center gap-x-10 border-y border-border/40 bg-muted/30 px-4 py-2.5 text-[11px] font-medium text-muted-foreground sm:px-5',
+								'grid items-center gap-x-6 border-y border-border/40 bg-muted/30 px-4 py-2.5 text-[11px] font-medium text-muted-foreground sm:gap-x-8 sm:px-5',
 								gridClass
 							)}
 						>
 							<span class="min-w-0">مراجع</span>
 							<bdi class={phoneColumnClass} dir="ltr">تماس</bdi>
 							<span class="min-w-0">آخرین مراجعه</span>
+							<span class="min-w-0">درآمد</span>
 							<span class="min-w-0">مانده</span>
 							<span class="min-w-0 text-center">بدهی باز</span>
 						</div>
@@ -115,7 +117,7 @@
 									<button
 										type="button"
 										class={cn(
-											'grid w-full items-center gap-x-10 px-4 py-3 text-start transition-colors duration-200 hover:bg-muted/30 sm:px-5',
+											'grid w-full items-center gap-x-6 px-4 py-3 text-start transition-colors duration-200 hover:bg-muted/30 sm:gap-x-8 sm:px-5',
 											gridClass
 										)}
 										onclick={() => openPatient(row.id)}
@@ -136,9 +138,16 @@
 											{formatDate(row.lastVisit)}
 										</p>
 										<p
+											class="min-w-0 truncate text-sm font-medium {row.totalPaid > 0
+												? 'text-emerald-700 dark:text-emerald-300'
+												: 'text-muted-foreground'}"
+										>
+											{formatToman(row.totalPaid)}
+										</p>
+										<p
 											class="min-w-0 truncate text-sm font-medium {row.balance > 0
-												? 'text-red-600'
-												: 'text-emerald-600'}"
+												? 'text-red-600 dark:text-red-400'
+												: 'text-muted-foreground'}"
 										>
 											{formatToman(row.balance)}
 										</p>
@@ -175,9 +184,24 @@
 										{formatPhone(row.phone)}
 									</bdi>
 								</div>
-								<p class="shrink-0 text-sm font-medium {row.balance > 0 ? 'text-red-600' : 'text-emerald-600'}">
-									{formatToman(row.balance)}
-								</p>
+								<div class="shrink-0 text-end">
+									<p
+										class="text-sm font-medium {row.totalPaid > 0
+											? 'text-emerald-700 dark:text-emerald-300'
+											: 'text-muted-foreground'}"
+									>
+										{formatToman(row.totalPaid)}
+									</p>
+									<p class="text-[10px] text-muted-foreground">درآمد</p>
+									<p
+										class="mt-1 text-sm font-medium {row.balance > 0
+											? 'text-red-600 dark:text-red-400'
+											: 'text-muted-foreground'}"
+									>
+										{formatToman(row.balance)}
+									</p>
+									<p class="text-[10px] text-muted-foreground">مانده</p>
+								</div>
 							</div>
 							<p class="mt-2 text-xs text-muted-foreground">
 								{formatDate(row.lastVisit)} · {row.unpaidCount.toLocaleString('fa-IR')} مورد باز

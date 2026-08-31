@@ -35,6 +35,7 @@ export interface AppointmentListItem {
 	patientUserId: string;
 	phone: string;
 	doctorName: string;
+	doctorId: string;
 	specialty: string;
 	type: string;
 	typeKey: AppointmentTypeKey;

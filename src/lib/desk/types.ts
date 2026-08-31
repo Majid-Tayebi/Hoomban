@@ -1,5 +1,5 @@
 export type PaymentStatus = 'paid' | 'unpaid' | 'partial' | 'waived';
-export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'gateway' | 'other';
 
 export interface LedgerRow {
 	id: string;
@@ -8,6 +8,7 @@ export interface LedgerRow {
 	date: Date;
 	expectedAmount: number;
 	paidAmount: number;
+	waivedAmount: number;
 	status: PaymentStatus;
 	method?: PaymentMethod;
 	paidAt?: Date;
@@ -18,6 +19,7 @@ export interface LedgerRow {
 export interface AccountingSummary {
 	totalExpected: number;
 	totalPaid: number;
+	totalWaived: number;
 	balance: number;
 	unpaidCount: number;
 }
@@ -33,6 +35,7 @@ export interface DeskPatientOverview {
 	patientCode: string;
 	phone: string;
 	balance: number;
+	totalPaid: number;
 	unpaidCount: number;
 	lastVisit?: Date;
 }
@@ -42,6 +45,7 @@ export interface DeskAccountingTotals {
 	totalBalance: number;
 	totalUnpaidItems: number;
 	totalPaid: number;
+	totalWaived: number;
 }
 
 export interface DeskAccountingOverview {
@@ -74,6 +78,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 	cash: 'نقد',
 	card: 'کارت',
 	transfer: 'انتقال',
+	gateway: 'درگاه آنلاین',
 	other: 'سایر'
 };
 

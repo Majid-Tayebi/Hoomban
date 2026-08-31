@@ -16,8 +16,14 @@
 		loadBookingDoctors,
 		loadBookingServices,
 		resolvePatientId,
+		slotToIsoDateTime,
 		validateMobile
 	} from '../services/booking';
+	import {
+		fetchZarinpalGatewayStatus,
+		startAppointmentOnlineCheckout,
+		type ZarinpalGatewayStatus
+	} from '$lib/payments/zarinpal-client';
 	import BookingTimeline from './booking-timeline.svelte';
 	import SpecialistPickList from './specialist-pick-list.svelte';
 	import ServicePickList from './service-pick-list.svelte';
@@ -30,7 +36,7 @@
 	import { formatToman } from '$lib/money';
 	import { goto } from '$app/navigation';
 	import { cn } from '$lib/utils';
-	import { Stethoscope, Tag } from '@lucide/svelte';
+	import { CreditCard, Stethoscope, Tag, ArrowRight } from '@lucide/svelte';
 
 	let {
 		user,
@@ -49,9 +55,9 @@
 	} = $props();
 
 	const deskSteps: BookingTimelineStep[] = [
-		{ id: 1, title: 'مشخصات مراجع', description: 'نام، نام خانوادگی و موبایل' },
-		{ id: 2, title: 'انتخاب نوبت', description: 'خدمات یا متخصص' },
-		{ id: 3, title: 'تاریخ و ساعت', description: 'تقویم و اسلات‌های آزاد' },
+		{ id: 1, title: 'انتخاب نوبت', description: 'خدمات یا متخصص' },
+		{ id: 2, title: 'تاریخ و ساعت', description: 'مشاهده وقت‌های خالی' },
+		{ id: 3, title: 'مشخصات مراجع', description: 'فقط برای ثبت نهایی نوبت' },
 		{ id: 4, title: 'تأیید و رزرو', description: 'بررسی نهایی و ثبت نوبت' }
 	];
 
@@ -78,10 +84,13 @@
 	let message = $state('');
 	let clientError = $state('');
 	let catalogsLoaded = $state(false);
+	let gatewayStatus = $state<ZarinpalGatewayStatus | null>(null);
+	let loadingGatewayStatus = $state(false);
 
 	const isFinalStep = $derived(deskMode ? currentStep === 4 : currentStep === 3);
-	const isDatetimeStep = $derived(deskMode ? currentStep === 3 : currentStep === 2);
-	const isSpecialistStep = $derived(deskMode ? currentStep === 2 : currentStep === 1);
+	const isPatientStep = $derived(deskMode && currentStep === 3);
+	const isDatetimeStep = $derived(deskMode ? currentStep === 2 : currentStep === 2);
+	const isSpecialistStep = $derived(deskMode ? currentStep === 1 : currentStep === 1);
 	const isServiceBooking = $derived(deskMode && bookingPath === 'service');
 	const clientLabel = $derived(
 		deskMode ? fullClientName(client) || '—' : user.name || 'مراجع'
@@ -89,7 +98,28 @@
 
 	const stepTitle = $derived(steps.find((s) => s.id === currentStep)?.title ?? '');
 	const showStepTitle = $derived(!isSpecialistStep);
+	const bookingAmountToman = $derived(
+		isServiceBooking && selectedService
+			? Math.max(0, Math.round(selectedService.price))
+			: selectedDoctor
+				? Math.max(0, Math.round(selectedDoctor.visitFee))
+				: 0
+	);
+	const shouldPayOnline = $derived(
+		!deskMode && Boolean(gatewayStatus?.configured) && bookingAmountToman > 0
+	);
+	const confirmButtonLabel = $derived(
+		booking
+			? shouldPayOnline
+				? 'در حال انتقال به درگاه...'
+				: 'در حال رزرو...'
+			: shouldPayOnline
+				? 'پرداخت و رزرو'
+				: 'رزرو'
+	);
 
+	const canGoBack = $derived(currentStep > 1);
+	const modalContentMinH = $derived(variant === 'modal' ? 'min-h-[min(52dvh,440px)]' : '');
 	const canProceedFromPickStep = $derived(
 		deskMode
 			? bookingPath === 'specialist'
@@ -154,12 +184,7 @@
 
 	function goNext() {
 		message = '';
-		if (deskMode && currentStep === 1) {
-			if (!validateClientStep()) return;
-			currentStep = 2;
-			return;
-		}
-		if ((deskMode && currentStep === 2) || (!deskMode && currentStep === 1)) {
+		if (isSpecialistStep) {
 			if (!canProceedFromPickStep) {
 				message = deskMode
 					? bookingPath === 'service'
@@ -170,15 +195,20 @@
 					: 'یک متخصص انتخاب کنید';
 				return;
 			}
-			currentStep = deskMode ? 3 : 2;
+			currentStep = 2;
 			return;
 		}
-		if ((deskMode && currentStep === 3) || (!deskMode && currentStep === 2)) {
+		if (isDatetimeStep) {
 			if (!selectedSlot) {
-				message = 'ساعت نوبت را انتخاب کنید';
+				message = 'برای رزرو، یک ساعت انتخاب کنید';
 				return;
 			}
-			currentStep = deskMode ? 4 : 3;
+			currentStep = deskMode ? 3 : 3;
+			return;
+		}
+		if (isPatientStep) {
+			if (!validateClientStep()) return;
+			currentStep = 4;
 		}
 	}
 
@@ -188,7 +218,7 @@
 		bookingPath = 'specialist';
 		selectedSlot = null;
 		message = '';
-		currentStep = deskMode ? 3 : 2;
+		currentStep = 2;
 	}
 
 	function selectService(service: BookingService) {
@@ -197,7 +227,14 @@
 		bookingPath = 'service';
 		selectedSlot = null;
 		message = '';
-		currentStep = 3;
+		currentStep = 2;
+	}
+
+	function goBack() {
+		message = '';
+		clientError = '';
+		if (currentStep <= 1) return;
+		currentStep -= 1;
 	}
 
 	function cancel() {
@@ -229,10 +266,21 @@
 			let patientId = user.id;
 			if (deskMode) {
 				if (!validateClientStep()) {
-					currentStep = 1;
+					currentStep = 3;
 					return;
 				}
 				patientId = await resolvePatientId(client);
+			}
+
+			if (shouldPayOnline && selectedDoctor) {
+				const { paymentUrl } = await startAppointmentOnlineCheckout({
+					patientId,
+					doctorId: selectedDoctor.id,
+					dateTime: slotToIsoDateTime(selectedSlot),
+					type: 'in_person'
+				});
+				window.location.href = paymentUrl;
+				return;
 			}
 
 			if (isServiceBooking && selectedService) {
@@ -265,8 +313,22 @@
 
 	$effect(() => {
 		if (!user) return;
-		const needsCatalog = deskMode ? currentStep >= 2 : currentStep >= 1;
-		if (needsCatalog) void ensureCatalogs();
+		if (currentStep >= 1) void ensureCatalogs();
+	});
+
+	$effect(() => {
+		if (deskMode || !isFinalStep || gatewayStatus || loadingGatewayStatus) return;
+		loadingGatewayStatus = true;
+		void fetchZarinpalGatewayStatus()
+			.then((status) => {
+				gatewayStatus = status;
+			})
+			.catch(() => {
+				gatewayStatus = { configured: false, sandbox: true };
+			})
+			.finally(() => {
+				loadingGatewayStatus = false;
+			});
 	});
 </script>
 
@@ -274,7 +336,7 @@
 <div
 	class={cn(
 		'grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)]',
-		variant === 'modal' && 'max-h-[min(85dvh,780px)] overflow-y-auto'
+		variant === 'modal' && 'max-h-[min(85dvh,780px)] min-h-[min(72dvh,640px)] overflow-y-auto'
 	)}
 >
 			<div class="border-b border-border/50 p-4 sm:p-5 lg:border-b-0 lg:border-e {variant === 'modal' ? 'bg-muted/20' : ''}">
@@ -289,37 +351,62 @@
 					</div>
 				{/if}
 
-				<div class="min-w-0 flex-1 space-y-4">
-					{#if deskMode && currentStep === 1}
-						<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-							<div class="space-y-1.5">
-								<Label for="fn">نام</Label>
-								<Input
-									id="fn"
-									bind:value={client.firstName}
-									placeholder="مثلاً سارا"
-									class="rounded-xl"
-								/>
-							</div>
-							<div class="space-y-1.5">
-								<Label for="ln">نام خانوادگی</Label>
-								<Input
-									id="ln"
-									bind:value={client.lastName}
-									placeholder="مثلاً محمدی"
-									class="rounded-xl"
-								/>
-							</div>
+				<div class={cn('min-w-0 flex-1 space-y-4', modalContentMinH)}>
+					{#if isPatientStep}
+						<div class="rounded-xl border border-primary/20 bg-primary/[0.04] p-3.5">
+							<p class="text-xs font-medium text-muted-foreground">نوبت انتخاب‌شده</p>
+							{#if isServiceBooking && selectedService}
+								<p class="mt-1 text-sm font-semibold">{selectedService.title}</p>
+								{#if selectedService.category}
+									<p class="text-xs text-muted-foreground">{selectedService.category}</p>
+								{/if}
+							{:else if selectedDoctor}
+								<p class="mt-1 text-sm font-semibold">{selectedDoctor.name}</p>
+								<p class="text-xs text-muted-foreground">{selectedDoctor.specialty}</p>
+							{/if}
+							{#if selectedSlot}
+								<p class="mt-2 text-sm tabular-nums text-foreground">
+									{formatFaDate(selectedDate)} — {selectedSlot.time}
+								</p>
+							{/if}
 						</div>
-						<div class="space-y-1.5">
-							<Label for="mob">شماره موبایل</Label>
-							<Input
-								id="mob"
-								bind:value={client.mobile}
-								placeholder="0912xxxxxxx"
-								dir="ltr"
-								class="rounded-xl"
-							/>
+						<p class="text-xs leading-relaxed text-muted-foreground">
+							فقط برای ثبت نهایی نوبت لازم است.
+						</p>
+						<div
+							class="rounded-xl border border-border/60 bg-card/50 p-4 sm:p-5"
+							dir="rtl"
+						>
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<div class="flex min-w-0 flex-col gap-1.5 text-right">
+									<Label for="fn">نام</Label>
+									<Input
+										id="fn"
+										bind:value={client.firstName}
+										placeholder="مثلاً سارا"
+										class="rounded-xl"
+									/>
+								</div>
+								<div class="flex min-w-0 flex-col gap-1.5 text-right">
+									<Label for="ln">نام خانوادگی</Label>
+									<Input
+										id="ln"
+										bind:value={client.lastName}
+										placeholder="مثلاً محمدی"
+										class="rounded-xl"
+									/>
+								</div>
+							</div>
+							<div class="mt-4 flex min-w-0 flex-col gap-1.5 text-right">
+								<Label for="mob">شماره موبایل</Label>
+								<Input
+									id="mob"
+									bind:value={client.mobile}
+									placeholder="0912xxxxxxx"
+									dir="ltr"
+									class="rounded-xl text-left"
+								/>
+							</div>
 						</div>
 						{#if clientError}
 							<p class="text-sm text-destructive">{clientError}</p>
@@ -383,6 +470,12 @@
 							/>
 						{/if}
 					{:else if isDatetimeStep}
+						{#if deskMode}
+							<p class="rounded-xl border border-border/60 bg-muted/30 px-3.5 py-2.5 text-sm text-muted-foreground">
+								می‌توانید فقط وقت‌های خالی را ببینید. برای رزرو، یک ساعت انتخاب کنید و ادامه
+								دهید.
+							</p>
+						{/if}
 						{#if isServiceBooking && selectedService}
 							<BookingServiceDatetimePanel
 								service={selectedService}
@@ -423,6 +516,34 @@
 									<p class="text-xs text-muted-foreground">متخصص</p>
 									<p class="mt-0.5 text-sm font-medium">{selectedDoctor.name}</p>
 									<p class="text-xs text-muted-foreground">{selectedDoctor.specialty}</p>
+									{#if selectedDoctor.visitFee > 0}
+										<p class="mt-1 text-xs tabular-nums text-muted-foreground">
+											حق ویزیت: {formatToman(selectedDoctor.visitFee)}
+										</p>
+									{/if}
+								</div>
+							{/if}
+							{#if bookingAmountToman > 0}
+								<div class="rounded-xl border border-border/60 p-3.5">
+									<p class="text-xs text-muted-foreground">مبلغ قابل پرداخت</p>
+									<p class="mt-0.5 text-sm font-semibold tabular-nums">
+										{formatToman(bookingAmountToman)}
+									</p>
+									{#if shouldPayOnline}
+										<p class="mt-1 inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
+											<CreditCard class="h-3.5 w-3.5" aria-hidden="true" />
+											پرداخت آنلاین از طریق زرین‌پال
+											{#if gatewayStatus?.sandbox}
+												<span class="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+													سندباکس
+												</span>
+											{/if}
+										</p>
+									{:else if !deskMode}
+										<p class="mt-1 text-xs text-muted-foreground">
+											پس از رزرو، پرداخت در مطب انجام می‌شود.
+										</p>
+									{/if}
 								</div>
 							{/if}
 							<div class="rounded-xl border border-border/60 p-3.5">
@@ -451,7 +572,7 @@
 				<div class="mt-6 flex items-center justify-between gap-3 border-t border-border/50 pt-4">
 					{#if isFinalStep}
 						<Button class="h-11 min-w-[120px] rounded-xl" disabled={booking} onclick={confirmBooking}>
-							{booking ? 'در حال رزرو...' : 'رزرو'}
+							{confirmButtonLabel}
 						</Button>
 					{:else}
 						<Button
@@ -461,17 +582,30 @@
 								(isDatetimeStep ? !selectedSlot : false)}
 							onclick={goNext}
 						>
-							ادامه
+							{isDatetimeStep && deskMode ? 'ادامه و ثبت مراجع' : 'ادامه'}
 						</Button>
 					{/if}
-					<Button
-						variant="outline"
-						class="h-11 min-w-[120px] rounded-xl"
-						disabled={booking}
-						onclick={cancel}
-					>
-						انصراف
-					</Button>
+					<div class="flex items-center gap-2">
+						{#if canGoBack}
+							<Button
+								variant="outline"
+								class="h-11 gap-1.5 rounded-xl"
+								disabled={booking}
+								onclick={goBack}
+							>
+								<ArrowRight class="h-4 w-4" />
+								برگشت
+							</Button>
+						{/if}
+						<Button
+							variant="outline"
+							class="h-11 min-w-[100px] rounded-xl"
+							disabled={booking}
+							onclick={cancel}
+						>
+							انصراف
+						</Button>
+					</div>
 				</div>
 			</div>
 </div>

@@ -7,11 +7,13 @@
 	let {
 		doctor,
 		selectedDate = $bindable(new Date()),
-		selectedSlot = $bindable(null as BookingSlot | null)
+		selectedSlot = $bindable(null as BookingSlot | null),
+		excludeAppointmentId = null as string | null
 	}: {
 		doctor: BookingDoctor;
 		selectedDate?: Date;
 		selectedSlot?: BookingSlot | null;
+		excludeAppointmentId?: string | null;
 	} = $props();
 
 	let slots = $state<BookingSlot[]>([]);
@@ -24,10 +26,11 @@
 	$effect(() => {
 		const d = doctor;
 		const date = selectedDate;
+		const excludeId = excludeAppointmentId;
 		if (!d) return;
 		loading = true;
 		selectedSlot = null;
-		void loadAvailableSlots(d, date)
+		void loadAvailableSlots(d, date, excludeId ? { excludeAppointmentId: excludeId } : undefined)
 			.then((list) => {
 				slots = list;
 			})

@@ -39,9 +39,9 @@
 				<BellRing class="h-5 w-5" />
 			</span>
 			<div class="min-w-0 flex-1 space-y-2 text-right">
-				<p class="text-sm font-semibold">اعلان حتی وقتی سایت بسته است</p>
+				<p class="text-sm font-semibold">اعلان مرورگر</p>
 				<p class="text-xs leading-relaxed text-muted-foreground">
-					با فعال‌سازی Web Push، نوبت‌ها و رویدادهای مهم را حتی خارج از پنل دریافت کنید.
+					داخل پنل toast می‌بینید؛ با فعال‌سازی، وقتی تب بسته است هم اعلان سیستم دریافت می‌کنید.
 				</p>
 				{#if error}
 					<p class="text-xs text-destructive">{error}</p>

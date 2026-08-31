@@ -49,6 +49,8 @@ export function buildPaymentNotes(params: {
 	installmentCount?: 2 | 3;
 	installmentPaidThis?: number;
 	remainingAfter?: number;
+	waivedAmount?: number;
+	remainingAfterWaiver?: number;
 }): string {
 	const parts: string[] = [];
 
@@ -65,7 +67,14 @@ export function buildPaymentNotes(params: {
 	} else if (params.paymentMode === 'full') {
 		parts.push('تسویه کامل');
 	} else if (params.paymentMode === 'waived') {
-		parts.push('بخشودگی');
+		if (params.waivedAmount !== undefined) {
+			parts.push(`بخشودگی: ${formatAmount(params.waivedAmount)} تومان`);
+			if (params.remainingAfterWaiver !== undefined && params.remainingAfterWaiver > 0) {
+				parts.push(`مانده پس از بخشودگی: ${formatAmount(params.remainingAfterWaiver)} تومان`);
+			}
+		} else {
+			parts.push('بخشودگی');
+		}
 	}
 
 	if (params.userNotes?.trim()) parts.push(params.userNotes.trim());
