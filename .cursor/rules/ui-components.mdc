@@ -1,0 +1,17 @@
+---
+description: Enforce modern UI components using shadcn-svelte and Tailwind CSS
+globs: src/lib/components/**/*.svelte, src/routes/**/*.svelte
+alwaysApply: true
+---
+
+# UI & Modern Component Rules
+
+## 1. UI Library Standard
+- Use `shadcn-svelte` (built on top of `bits-ui`) for all UI interactions (Dialogs, Sheets, Dropdowns, Tabs, Tooltips).
+- NEVER build raw HTML inputs, dropdowns, or modals if a `shadcn-svelte` component exists for it.
+- If a component is missing, ask the user to run `npx shadcn-svelte@latest add <component-name>`.
+
+## 2. Micro-interactions & Animations
+- Use `lucide-svelte` exclusively for standard UI icons.
+- Apply smooth CSS transitions using Tailwind classes (e.g., `transition-all duration-200 ease-in-out`).
+- Ensure all forms, buttons, and interactive cards have explicit visual hover, active, and focus states.

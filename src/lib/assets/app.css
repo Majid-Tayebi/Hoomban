@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /*
+      Test palette — cerulean / azure-mist / black / dark-goldenrod
+    */
+    --background: 200 50% 95%;
+    --foreground: 200 70% 7%;
+    --card: 200 48% 97%;
+    --card-foreground: 200 70% 7%;
+    --popover: 200 48% 97%;
+    --popover-foreground: 200 70% 7%;
+    --primary: 200 70% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 45% 88%;
+    --secondary-foreground: 200 70% 20%;
+    --muted: 200 45% 90%;
+    --muted-foreground: 200 55% 40%;
+    --accent: 200 70% 90%;
+    --accent-foreground: 200 70% 20%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 45% 80%;
+    --input: 200 45% 80%;
+    --ring: 200 70% 40%;
+    --radius: 0.875rem;
+    --dashboard-success: 200 70% 40%;
+    --dashboard-info: 200 55% 55%;
+    --dashboard-warning: 38 70% 48%;
+    --dashboard-sidebar: 200 48% 97%;
+    --sidebar: 200 48% 97%;
+    --sidebar-foreground: 200 70% 7%;
+    --sidebar-primary: 200 70% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 45% 90%;
+    --sidebar-accent-foreground: 200 70% 20%;
+    --sidebar-border: 200 45% 80%;
+    --sidebar-ring: 200 70% 40%;
+  }
+
+  .dark {
+    --background: 200 70% 7%;
+    --foreground: 200 45% 90%;
+    --card: 200 70% 10%;
+    --card-foreground: 200 45% 90%;
+    --popover: 200 70% 10%;
+    --popover-foreground: 200 45% 90%;
+    --primary: 200 70% 55%;
+    --primary-foreground: 200 70% 7%;
+    --secondary: 200 55% 16%;
+    --secondary-foreground: 200 45% 90%;
+    --muted: 200 55% 14%;
+    --muted-foreground: 200 40% 62%;
+    --accent: 200 55% 16%;
+    --accent-foreground: 200 70% 78%;
+    --destructive: 0 55% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 55% 18%;
+    --input: 200 55% 18%;
+    --ring: 200 70% 55%;
+    --dashboard-success: 200 70% 55%;
+    --dashboard-info: 200 70% 65%;
+    --dashboard-warning: 38 70% 50%;
+    --dashboard-sidebar: 200 70% 10%;
+    --sidebar: 200 70% 10%;
+    --sidebar-foreground: 200 45% 90%;
+    --sidebar-primary: 200 70% 55%;
+    --sidebar-primary-foreground: 200 70% 7%;
+    --sidebar-accent: 200 55% 14%;
+    --sidebar-accent-foreground: 200 45% 90%;
+    --sidebar-border: 200 55% 18%;
+    --sidebar-ring: 200 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Vazirmatn', sans-serif;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .page-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6;
+  }
+  .touch-target {
+    @apply min-h-11 min-w-11;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    min-height: 100dvh;
+  }
+}

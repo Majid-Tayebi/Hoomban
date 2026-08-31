@@ -1,0 +1,20 @@
+---
+description: Enforce strict backend, PocketBase, and RBAC security rules
+globs: src/**/*.ts, src/**/*.js, pocketbase/pb_migrations/*.js
+alwaysApply: true
+---
+
+# Security & RBAC Enforcement Rules
+
+## 1. PocketBase API Rules & ACL
+- NEVER rely solely on UI component hiding for access control.
+- `clinical_notes` collection MUST always be strictly restricted in PocketBase API Rules to Admin and the owning Doctor (`@request.auth.id = doctor.user`).
+- Never expose confidential endpoints or patient profiles to `secretary`, `writer`, or `patient` roles.
+
+## 2. SvelteKit Server Guards
+- Always enforce role checks in `+layout.server.ts` or `+page.server.ts` before rendering protected routes (`/dashboard/*`).
+- Redirect unauthorized users immediately to `/auth` or `/dashboard` base on their role level.
+
+## 3. Data Privacy & Environment Safety
+- NEVER expose `POCKETBASE_ADMIN_PASSWORD` or sensitive API keys to the client-side bundle.
+- Audio recordings and medical files must be saved directly to PocketBase Storage with strict view permissions; NEVER persist raw audio or secret notes in browser `localStorage`.

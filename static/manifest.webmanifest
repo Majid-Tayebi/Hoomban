@@ -1,0 +1,28 @@
+{
+	"name": "هومبان | کلینیک روانشناسی",
+	"short_name": "هومبان",
+	"description": "پنل و سایت کلینیک روانشناسی هومبان",
+	"start_url": "/dashboard",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait-primary",
+	"dir": "rtl",
+	"lang": "fa",
+	"theme_color": "#1a4d2e",
+	"background_color": "#f8faf9",
+	"categories": ["medical", "health"],
+	"icons": [
+		{
+			"src": "/images/hoomban-logo.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/images/hoomban-logo.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any maskable"
+		}
+	]
+}

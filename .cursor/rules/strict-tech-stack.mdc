@@ -1,0 +1,29 @@
+---
+description: Enforce Tailwind-only styling and shadcn-svelte UI components
+alwaysApply: true
+---
+
+# Strict Tech Stack & Styling Rules
+
+You must strictly adhere to the following technical stack and styling guidelines for this project. Never deviate from these rules under any circumstances.
+
+## 1. Styling Restrictions (Tailwind CSS Only)
+
+- YOU ARE STRICTLY FORBIDDEN from using raw/plain CSS (e.g., `<style>` tags, `.css` files, or inline CSS styles).
+- Every single style, layout, animation, and responsive design MUST be written using utility classes from Tailwind CSS.
+- If you need custom values, use Tailwind's arbitrary values (e.g., `text-[22px]`) or ask to update `tailwind.config.js`.
+
+## 2. Component Library (shadcn-svelte Only)
+
+- You must exclusively use `shadcn-svelte` for UI components (buttons, dialogs, inputs, etc.).
+- DO NOT invent native HTML alternatives or use other component libraries (like Flowbite or Skeleton) if a shadcn-svelte component exists.
+- When creating new UI elements, always check if they can be built by composing existing shadcn-svelte components.
+- If a required component is not yet installed in the project, output the exact `npx shadcn-svelte@latest add <component-name>` command for me to run.
+
+## 3. General Enforcement
+
+- Never forget these constraints.
+- If any requested feature implies writing raw CSS, reject that part of the implementation and refactor it completely into Tailwind CSS classes.
+
+## 4. Framework Best Practices
+- Strictly follow SvelteKit file-based routing and idiomatic Svelte 5 / Svelte 4 reactivity patterns.
