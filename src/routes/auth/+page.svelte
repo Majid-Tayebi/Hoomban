@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { loginRedirectUrl, sanitizeAuthRedirect } from '$lib/auth-redirect';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
@@ -41,14 +42,16 @@
 	let otpDisplayCode = $state<string | undefined>();
 	let verifyingOtp = $state(false);
 
+	type SignInMethod = 'credentials' | 'mobile';
+	let signInMethod = $state<SignInMethod>('credentials');
+
 	const MOBILE_REGEX = /^09\d{9}$/;
 
 	let user = $derived(getUser());
 	let hydrated = $derived(isAuthHydrated());
 	let postLoginPath = $derived.by(() => {
 		const redirect = $page.url.searchParams.get('redirect');
-		if (redirect?.startsWith('/dashboard')) return redirect;
-		return '/dashboard';
+		return sanitizeAuthRedirect(redirect);
 	});
 
 	$effect(() => {
@@ -120,6 +123,7 @@
 	function openSignIn() {
 		showSignUp = false;
 		recoveryMode = false;
+		signInMethod = 'credentials';
 		error = '';
 		resetOtpFlow();
 	}
@@ -302,6 +306,21 @@
 
 	const toggleBtnClass =
 		'mt-2.5 rounded-full border border-primary-foreground/75 px-10 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-foreground/10';
+
+	const signInTabClass = (active: boolean) =>
+		cn(
+			'flex-1 rounded-lg px-2 py-2 text-[11px] font-semibold leading-snug transition-all duration-200 sm:text-xs',
+			active
+				? 'bg-card text-foreground shadow-sm'
+				: 'text-muted-foreground hover:text-foreground'
+		);
+
+	function switchSignInMethod(method: SignInMethod) {
+		signInMethod = method;
+		recoveryMode = false;
+		error = '';
+		if (method === 'credentials') resetOtpFlow();
+	}
 </script>
 
 <div
@@ -362,8 +381,29 @@
 				onsubmit={(e) => e.preventDefault()}
 			>
 				<h2 class="text-3xl font-semibold leading-tight tracking-tight text-foreground">ورود</h2>
-				<span class="my-5 text-xs text-muted-foreground">ورود با نام کاربری و رمز عبور</span>
 
+				<div class="my-5 flex w-full gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="روش ورود">
+					<button
+						type="button"
+						role="tab"
+						aria-selected={signInMethod === 'credentials'}
+						class={signInTabClass(signInMethod === 'credentials')}
+						onclick={() => switchSignInMethod('credentials')}
+					>
+						ورود با نام کاربری و رمز عبور
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={signInMethod === 'mobile'}
+						class={signInTabClass(signInMethod === 'mobile')}
+						onclick={() => switchSignInMethod('mobile')}
+					>
+						ورود با شماره موبایل
+					</button>
+				</div>
+
+				{#if signInMethod === 'credentials'}
 				<div class="w-full" dir="ltr">
 					<div class="my-2 flex h-11 w-full items-center overflow-hidden rounded-xl bg-muted">
 						<div
@@ -387,7 +427,7 @@
 					/>
 				</div>
 
-				{#if error && !showSignUp}
+				{#if error && !showSignUp && signInMethod === 'credentials'}
 					<p class="mt-2 w-full text-center text-xs text-destructive" role="alert">{error}</p>
 				{/if}
 
@@ -400,14 +440,124 @@
 				>
 					فراموشی رمز عبور؟
 				</button>
+				{:else if otpStep === 1}
+					<input
+						type="tel"
+						inputmode="numeric"
+						autocomplete="tel"
+						bind:value={mobile}
+						placeholder="0912xxxxxxx"
+						dir="ltr"
+						class={cn(fieldClass, 'w-full text-left tracking-wide')}
+					/>
 
-				<button
-					type="button"
-					class="mt-1 text-[13px] text-muted-foreground transition-colors duration-200 hover:text-primary md:hidden"
-					onclick={() => openSignUp(false)}
-				>
-					ورود / ثبت‌نام با موبایل
-				</button>
+					{#if error && !showSignUp && signInMethod === 'mobile'}
+						<p class="mt-2 w-full text-center text-xs text-destructive" role="alert">{error}</p>
+					{/if}
+
+					<StatefulButton class="mt-2.5 w-full" onclick={sendOTP}>ارسال کد</StatefulButton>
+				{:else}
+					<p class="mb-3 text-xs text-muted-foreground">
+						کد به <span dir="ltr">{storedMobile}</span> ارسال شد
+					</p>
+
+					{#if otpDisplayCode}
+						<p class="mb-3 text-center text-sm text-muted-foreground">
+							کد تأیید:
+							<span
+								dir="ltr"
+								class="mr-1 inline-block font-semibold tracking-[0.35em] text-foreground tabular-nums"
+							>
+								{otpDisplayCode}
+							</span>
+						</p>
+					{/if}
+
+					{#if detectedRole}
+						<div class="mb-3 w-full rounded-xl bg-accent/70 px-3 py-2 text-center text-xs text-accent-foreground">
+							ورود — <strong>{roleLabel(detectedRole)}</strong>
+							{#if detectedName}
+								<span class="text-muted-foreground"> / {detectedName}</span>
+							{/if}
+						</div>
+					{/if}
+
+					<div class="py-2" dir="ltr">
+						<OTPInput
+							length={OTP_CODE_LENGTH}
+							onComplete={(value) => {
+								const code = normalizeOtpCode(value);
+								otp = code;
+								if (code.length === OTP_CODE_LENGTH) void verifyOTP(code);
+							}}
+							onValueChange={(value) => {
+								otp = normalizeOtpCode(value);
+								otpError = false;
+								error = '';
+							}}
+							disabled={isLoading}
+							error={otpError}
+						/>
+					</div>
+
+					{#if error && !showSignUp && signInMethod === 'mobile'}
+						<p class="mt-2 text-center text-xs text-destructive" role="alert">{error}</p>
+					{/if}
+
+					<div class="mt-4 w-full space-y-2">
+						<div class="flex items-center justify-between gap-3 text-xs">
+							<span class="text-muted-foreground">کد را دریافت نکردید؟</span>
+							{#if canResendOtp}
+								<button
+									type="button"
+									class="shrink-0 font-semibold text-primary transition-colors duration-200 hover:text-primary/80 disabled:opacity-50"
+									disabled={resendingOtp}
+									onclick={resendOTP}
+								>
+									{resendingOtp ? 'در حال ارسال...' : 'ارسال مجدد کد'}
+								</button>
+							{:else}
+								<span class="shrink-0 tabular-nums text-muted-foreground">
+									{otpResendRemaining.toLocaleString('fa-IR')} ثانیه
+								</span>
+							{/if}
+						</div>
+						<div
+							class="h-1 w-full overflow-hidden rounded-full bg-muted"
+							role="progressbar"
+							aria-valuemin={0}
+							aria-valuemax={100}
+							aria-valuenow={Math.round(otpResendProgress)}
+							aria-label="زمان تا ارسال مجدد کد"
+						>
+							<div
+								class="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+								style={`width: ${otpResendProgress}%`}
+							></div>
+						</div>
+					</div>
+
+					<div class="mt-2 flex w-full gap-2">
+						<button
+							type="button"
+							class="flex-1 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-muted"
+							disabled={isLoading}
+							onclick={resetOtpFlow}
+						>
+							تغییر شماره
+						</button>
+						<StatefulButton
+							class="flex-1 !px-3"
+							disabled={isLoading || normalizeOtpCode(otp).length !== OTP_CODE_LENGTH}
+							onclick={async () => {
+								const ok = await verifyOTP();
+								if (!ok) throw new Error('verify failed');
+							}}
+						>
+							تأیید و ورود
+						</StatefulButton>
+					</div>
+				{/if}
 			</form>
 		</div>
 

@@ -11,6 +11,8 @@
 		NavbarButton,
 		NavbarToggleTheme
 	} from '$lib/components/ui/resizable-navbar';
+	import { page } from '$app/stores';
+	import { loginRedirectUrl } from '$lib/auth-redirect';
 	import { getTheme } from '$lib/theme.svelte';
 
 	let {
@@ -34,7 +36,12 @@
 	let isMobileMenuOpen = $state(false);
 
 	const isLoggedIn = $derived(Boolean(user?.id ?? user));
-	const authHref = $derived(isLoggedIn ? '/dashboard' : '/auth');
+	const authHref = $derived.by(() => {
+		if (isLoggedIn) return '/dashboard';
+		const path = $page.url.pathname;
+		if (path.startsWith('/tests')) return loginRedirectUrl(path);
+		return '/auth';
+	});
 	const authLabel = $derived(isLoggedIn ? 'داشبورد' : 'ورود');
 
 	function closeMobileMenu() {

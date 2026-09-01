@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { getUser } from '$lib/auth.svelte';
-	import { pb } from '$lib/pocketbase';
+	import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
 	import { goto } from '$app/navigation';
+	import { canEditPsychTests, canViewPsychTestsDashboard } from '$lib/rbac';
 	import Button from '$lib/components/ui/button.svelte';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -15,6 +16,8 @@
 	import { Plus, Trash2 } from '@lucide/svelte';
 
 	let user = $derived(getUser());
+	const canView = $derived(canViewPsychTestsDashboard(user?.role));
+	const canEdit = $derived(canEditPsychTests(user?.role));
 	let tests = $state<
 		{ id: string; title: string; slug: string; description?: string; category: string; is_active: boolean }[]
 	>([]);
@@ -33,7 +36,10 @@
 	async function loadTests() {
 		isLoading = true;
 		try {
-			const result = await pb.collection('psych_tests').getList(1, 50, { sort: '-created' });
+			const result = await pb.collection('psych_tests').getList(1, 50, {
+				sort: '-id',
+				...PB_NO_AUTO_CANCEL
+			});
 			tests = result.items.map((item) => ({
 				id: item.id,
 				title: String(item.title ?? ''),
@@ -42,7 +48,9 @@
 				category: String(item.category ?? ''),
 				is_active: Boolean(item.is_active)
 			}));
-		} catch {
+		} catch (err: unknown) {
+			const e = err as { message?: string };
+			error = e.message || 'خطا در بارگذاری تست‌ها';
 			tests = [];
 		} finally {
 			isLoading = false;
@@ -94,7 +102,11 @@
 	}
 
 	$effect(() => {
-		if (user) loadTests();
+		if (user && !canView) goto('/dashboard');
+	});
+
+	$effect(() => {
+		if (user && canView) loadTests();
 	});
 </script>
 
@@ -104,14 +116,22 @@
 			<h1 class="text-xl font-bold sm:text-2xl">مدیریت تست‌ها</h1>
 			<p class="mt-1 text-sm text-muted-foreground">ساخت و مدیریت تست‌های روانشناسی</p>
 		</div>
-		<Button class="h-10 shrink-0 rounded-xl" onclick={() => (showCreate = true)}>
-			<Plus class="ml-1 h-4 w-4" />
+		<Button class="h-10 shrink-0 rounded-xl" onclick={() => (showCreate = true)} disabled={!canEdit}>
+			<Plus class="ms-1 h-4 w-4" />
 			تست جدید
 		</Button>
 	</div>
 
+	{#if !canEdit}
+		<p class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+			برای ویرایش سوالات و تنظیمات نمره‌دهی با حساب <strong>نویسنده</strong> وارد شوید.
+		</p>
+	{/if}
+
 	{#if isLoading}
 		<p class="py-10 text-center text-sm text-muted-foreground">در حال بارگذاری...</p>
+	{:else if error}
+		<p class="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>
 	{:else if tests.length === 0}
 		<Card class="rounded-2xl shadow-sm">
 			<CardContent class="py-10 text-center text-sm text-muted-foreground">تستی ثبت نشده است.</CardContent>
@@ -143,9 +163,11 @@
 							<Button variant="outline" size="sm" class="rounded-lg" onclick={() => goto(`/tests/${test.slug}`)}>
 								مشاهده
 							</Button>
-							<Button variant="ghost" size="sm" class="rounded-lg text-destructive" onclick={() => deleteTest(test.id)}>
-								<Trash2 class="h-4 w-4" />
-							</Button>
+							{#if canEdit}
+								<Button variant="ghost" size="sm" class="rounded-lg text-destructive" onclick={() => deleteTest(test.id)}>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							{/if}
 						</div>
 					</CardContent>
 				</Card>

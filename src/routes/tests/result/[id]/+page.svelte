@@ -1,20 +1,27 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { pb } from '$lib/pocketbase';
+	import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
+	import { getUser } from '$lib/auth.svelte';
+	import { loginRedirectUrl } from '$lib/auth-redirect';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/ui/button.svelte';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
 	import CardTitle from '$lib/components/ui/card-title.svelte';
 	import CardContent from '$lib/components/ui/card-content.svelte';
+	import NeoResultPanel from '$lib/tests/components/neo-result-panel.svelte';
+	import { buildNeoInterpretation } from '$lib/psych/neo-240/interpret';
+	import { isNeoScores } from '$lib/psych/neo-240/score';
+	import { parsePsychJsonField } from '$lib/psych/parse-json-field';
 	import { onDestroy } from 'svelte';
 	import type { Chart as ChartJs } from 'chart.js';
 
 	let id = $derived($page.params.id ?? '');
+	let user = $derived(getUser());
 	let result = $state<{
 		interpretation_text: string;
-		scores_json: string;
-		answers_json: string;
+		scores_json: unknown;
+		answers_json: unknown;
 	} | null>(null);
 	let test = $state<{ title: string } | null>(null);
 	let isLoading = $state(true);
@@ -23,16 +30,45 @@
 	let canvasElement = $state<HTMLCanvasElement | null>(null);
 	let ChartCtor = $state<typeof ChartJs | null>(null);
 
+	const parsedScores = $derived(result ? parsePsychJsonField<unknown>(result.scores_json) : null);
+	const isNeo = $derived(parsedScores !== null && isNeoScores(parsedScores));
+	const neoAnswers = $derived(
+		result
+			? parsePsychJsonField<
+					{
+						order: number;
+						question_text: string;
+						selected_option: string;
+						facet_key?: string;
+					}[]
+				>(result.answers_json)
+			: []
+	);
+	const interpretationText = $derived.by(() => {
+		if (!result) return '';
+		const saved = String(result.interpretation_text || '').trim();
+		if (saved) return saved;
+		if (isNeo && parsedScores && isNeoScores(parsedScores)) {
+			return buildNeoInterpretation(parsedScores);
+		}
+		return '';
+	});
+
 	async function loadResult() {
 		if (!id) return;
+		if (!user) {
+			goto(loginRedirectUrl(`/tests/result/${id}`));
+			return;
+		}
 		isLoading = true;
 		error = '';
 		try {
 			const resultData = await pb.collection('psych_results').getOne(id, {
-				expand: 'test,user'
+				expand: 'test,user',
+				...PB_NO_AUTO_CANCEL
 			});
 			result = {
-				interpretation_text: resultData.interpretation_text,
+				interpretation_text: String(resultData.interpretation_text || ''),
 				scores_json: resultData.scores_json,
 				answers_json: resultData.answers_json
 			};
@@ -46,14 +82,14 @@
 	}
 
 	async function createChart() {
-		if (!canvasElement || !result) return;
+		if (!canvasElement || !result || isNeo) return;
 
 		if (!ChartCtor) {
 			const mod = await import('chart.js/auto');
 			ChartCtor = mod.default;
 		}
 
-		const scores = JSON.parse(result.scores_json) as Record<string, number>;
+		const scores = parsePsychJsonField<Record<string, number>>(result.scores_json);
 		const labels = Object.keys(scores);
 		const data = Object.values(scores).map(Number);
 
@@ -91,11 +127,11 @@
 	}
 
 	$effect(() => {
-		if (id) loadResult();
+		if (id) void loadResult();
 	});
 
 	$effect(() => {
-		if (result && canvasElement) {
+		if (result && canvasElement && !isNeo) {
 			void createChart();
 		}
 	});
@@ -114,9 +150,24 @@
 		</CardHeader>
 		<CardContent class="space-y-4 px-4 pb-4 sm:px-6">
 			<p class="text-sm text-destructive">{error}</p>
-			<Button class="h-11 w-full rounded-xl" onclick={() => goto('/dashboard')}>بازگشت</Button>
+			<Button class="h-11 w-full rounded-xl" onclick={() => goto('/tests')}>بازگشت</Button>
 		</CardContent>
 	</Card>
+{:else if result && test && isNeo && parsedScores && isNeoScores(parsedScores)}
+	<div class="space-y-4">
+		<NeoResultPanel
+			testTitle={test.title}
+			scores={parsedScores}
+			answers={neoAnswers}
+			interpretationText={interpretationText}
+		/>
+		<div class="mx-auto grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-2">
+			<Button class="h-11 rounded-xl" onclick={() => window.print()}>چاپ / PDF</Button>
+			<Button variant="outline" class="h-11 rounded-xl" onclick={() => goto('/tests')}>
+				بازگشت به تست‌ها
+			</Button>
+		</div>
+	</div>
 {:else if result && test}
 	<div class="mx-auto max-w-2xl space-y-4">
 		<div>
@@ -126,10 +177,14 @@
 
 		<Card class="rounded-2xl shadow-sm">
 			<CardHeader class="px-4 pt-4 sm:px-6">
-				<CardTitle class="text-base">تحلیل نتیجه</CardTitle>
+				<CardTitle class="text-base">تحلیل و تفسیر نتیجه</CardTitle>
 			</CardHeader>
 			<CardContent class="px-4 pb-4 sm:px-6">
-				<p class="text-sm leading-relaxed sm:text-base">{result.interpretation_text}</p>
+				{#if interpretationText}
+					<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{interpretationText}</pre>
+				{:else}
+					<p class="text-sm text-muted-foreground">تفسیر برای این نتیجه ثبت نشده است.</p>
+				{/if}
 			</CardContent>
 		</Card>
 
@@ -149,7 +204,7 @@
 				<CardTitle class="text-base">پاسخ‌های شما</CardTitle>
 			</CardHeader>
 			<CardContent class="space-y-2.5 px-4 pb-4 sm:px-6">
-				{#each JSON.parse(result.answers_json) as answer}
+				{#each parsePsychJsonField<{ question_text: string; selected_option: string }[]>(result.answers_json) as answer, i (i)}
 					<div class="rounded-xl border p-3.5">
 						<p class="text-sm font-medium">{answer.question_text}</p>
 						<p class="mt-1 text-xs text-muted-foreground">پاسخ: {answer.selected_option}</p>
@@ -160,8 +215,8 @@
 
 		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<Button class="h-11 rounded-xl" onclick={() => window.print()}>چاپ / PDF</Button>
-			<Button variant="outline" class="h-11 rounded-xl" onclick={() => goto('/dashboard')}>
-				بازگشت به داشبورد
+			<Button variant="outline" class="h-11 rounded-xl" onclick={() => goto('/tests')}>
+				بازگشت به تست‌ها
 			</Button>
 		</div>
 	</div>

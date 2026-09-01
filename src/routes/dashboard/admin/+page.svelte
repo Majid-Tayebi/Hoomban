@@ -12,7 +12,6 @@
 		Stethoscope,
 		Tag,
 		FileText,
-		Brain,
 		UserCog,
 		Settings,
 		Shield,
@@ -29,7 +28,6 @@
 		{ title: 'متخصصین', desc: 'عکس، تعرفه، ساعات کاری', path: '/dashboard/doctors', icon: Stethoscope },
 		{ title: 'خدمات و تعرفه', desc: 'قیمت‌گذاری خدمات کلینیک', path: '/dashboard/services', icon: Tag },
 		{ title: 'مقالات', desc: 'CMS محتوای سایت', path: '/dashboard/articles', icon: FileText },
-		{ title: 'تست‌های روانشناسی', desc: 'ساخت و ویرایش تست', path: '/dashboard/tests', icon: Brain },
 		{ title: 'کارکنان', desc: 'مدیریت نقش منشی، پزشک، نویسنده', path: '/dashboard/admin/staff', icon: UserCog },
 		{ title: 'تنظیمات کلینیک', desc: 'پیامک، حساب و پیکربندی', path: '/dashboard/settings', icon: Settings }
 	];

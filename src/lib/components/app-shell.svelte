@@ -159,8 +159,7 @@
 						{ title: 'تقویم', href: '/dashboard/calendar' },
 						{ title: 'حسابداری', href: '/dashboard/desk/accounting' },
 						{ title: 'متخصصین', href: '/dashboard/doctors' },
-						{ title: 'خدمات', href: '/dashboard/services' },
-						{ title: 'آزمون‌ها', href: '/dashboard/tests' }
+						{ title: 'خدمات', href: '/dashboard/services' }
 					]
 				}
 			];

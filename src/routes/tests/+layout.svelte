@@ -1,9 +1,9 @@
 <script lang="ts">
-	import AppShell from '$lib/components/app-shell.svelte';
+	import TestsPublicShell from '$lib/components/tests-public-shell.svelte';
 
 	let { children } = $props();
 </script>
 
-<AppShell>
+<TestsPublicShell>
 	{@render children()}
-</AppShell>
+</TestsPublicShell>

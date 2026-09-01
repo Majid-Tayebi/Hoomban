@@ -17,7 +17,7 @@ export const DASHBOARD_ROUTE_ACCESS: RouteAccess[] = [
 	{ path: '/dashboard/inventory', roles: ['admin', 'secretary'] },
 	{ path: '/dashboard/messages', roles: ['admin', 'secretary', 'doctor'] },
 	{ path: '/dashboard/departments', roles: ['admin', 'secretary'] },
-	{ path: '/dashboard/tests', roles: ['admin', 'secretary', 'writer'] },
+	{ path: '/dashboard/tests', roles: ['writer', 'admin'] },
 	{ path: '/dashboard/schedule', roles: ['doctor', 'admin'] },
 	{ path: '/dashboard/admin', roles: ['admin'] },
 	{ path: '/dashboard/settings', roles: ['admin'] },
@@ -62,6 +62,16 @@ export function canWriteClinicalNotes(role?: string | null): boolean {
 /** Edit referral/profile fields on patient record: admin + doctor. */
 export function canEditPatientProfile(role?: string | null): boolean {
 	return role === 'admin' || role === 'doctor';
+}
+
+/** Create/update psych tests and questions — writer only (enforced in PocketBase too). */
+export function canEditPsychTests(role?: string | null): boolean {
+	return role === 'writer';
+}
+
+/** View psych test editor (read-only for admin). */
+export function canViewPsychTestsDashboard(role?: string | null): boolean {
+	return role === 'writer' || role === 'admin';
 }
 
 /** Secretary desk: contact + appointments + payments (no clinical notes). */

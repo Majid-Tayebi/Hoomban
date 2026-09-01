@@ -1,0 +1,1922 @@
+[
+  {
+    "order": 1,
+    "question_text": "من آدم نگرانی نیستم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": true
+  },
+  {
+    "order": 2,
+    "question_text": "من بیشتر افرادی را که می‌شناسم دوست دارم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 3,
+    "question_text": "من قدرت تخیل و تصور خیلی زنده و فعالی دارم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": false
+  },
+  {
+    "order": 4,
+    "question_text": "من معمولا در مورد قصد و نیت دیگران بدبین و بد گمان هستم.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": true
+  },
+  {
+    "order": 5,
+    "question_text": "من به محتاط بودن و داشتن عقل سلیم، مشهورم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": false
+  },
+  {
+    "order": 6,
+    "question_text": "من از نحوه برخورد دیگران با خودم عصبانی می شوم.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": false
+  },
+  {
+    "order": 7,
+    "question_text": "من معمولا از جمعیتهاي بزرگ و شلوغ دوري و پرهیز می کنم.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": true
+  },
+  {
+    "order": 8,
+    "question_text": "م ائل و مطالب مربوط به هنر و زیبا شناسی برای من اهمیت چندانی ندارند.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": true
+  },
+  {
+    "order": 9,
+    "question_text": "من آدم حیله گر و مکاری نیستم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 10,
+    "question_text": "من ترجیح می دهم با ذهن باز به استقبال اتفاقات آینده بروم تا اینکه برای هر کاری طرح و نقشه قبلی داشته باشم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": true
+  },
+  {
+    "order": 11,
+    "question_text": "من به ندرت احساس تنهایی و غمگینی می کنم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 12,
+    "question_text": "من آدمی مسلط، قوي و قاطع هستم.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 13,
+    "question_text": "بدون هیجانات قوي، زندگی برای من چیز جالبی نخواهد بود.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": false
+  },
+  {
+    "order": 14,
+    "question_text": "بعضی از مردم مرا آدمی خودخواه و خود محور می دانند.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": true
+  },
+  {
+    "order": 15,
+    "question_text": "من سعی می کنم تا وظایف محوله به خود را با صداقت و درستی انجام دهم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": false
+  },
+  {
+    "order": 16,
+    "question_text": "من در معامله با مردم همیشه از این می ترسم که نکند مرتکب اشتباه بزرگی شوم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": false
+  },
+  {
+    "order": 17,
+    "question_text": "من در موقع کار یا تفریح عجله و شتاب به خرج نمی دهم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 18,
+    "question_text": "من در کارهای خود از روش نسبتا ثابت و جا افتاده اي پیروي می کنم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": true
+  },
+  {
+    "order": 19,
+    "question_text": "من ترجیح می دهم با دیگران همکاری کنم تا این که با آنان به رقابت بپردازم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": false
+  },
+  {
+    "order": 20,
+    "question_text": "من آدم راحت طلب و تنبلی هستم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 21,
+    "question_text": "من به ندرت در کارها زیاده روي می کنم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": true
+  },
+  {
+    "order": 22,
+    "question_text": "من اغلب تشنه هیجان و تحریک هستم.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": false
+  },
+  {
+    "order": 23,
+    "question_text": "من اغلب از بازي کردن با نظریه ها و افکار انتزاعی لذت می برم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": false
+  },
+  {
+    "order": 24,
+    "question_text": "من از لاف زدن درباره استعدادها و موفقیتهاي خودم بدم نمی آید.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": true
+  },
+  {
+    "order": 25,
+    "question_text": "من به خوبی می توانم وقت و فعالیت خودم را طوری تنظیم کنم که کارهای محوله به موقع تمام. شود.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": false
+  },
+  {
+    "order": 26,
+    "question_text": "من اغلب احساس درماندگی و ناتوانی می کنم و میل دارم شخص دیگري مسائلم را حل کند.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 27,
+    "question_text": "من هرگز آنقدر احساس خوشحالی نکرده ام که به اصطلاح از خوشی به هوا بپرم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": true
+  },
+  {
+    "order": 28,
+    "question_text": "من معتقدم اگر به دانشجویان اجازه داده شود تا به سخنرانی بحث انگیز و متناقض گوش دهند،. فقط باعث سردرگمی و انحراف فکري بیشتر آنان خ واهد شد.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": true
+  },
+  {
+    "order": 29,
+    "question_text": "رهبران سیاسی باید درباره جنبه هاي انسانی برنامه هاي خود آگاهی بیشتري داشته باشند.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": false
+  },
+  {
+    "order": 30,
+    "question_text": "در طی سالها، من بعضی کارهای کاملا بی ربط انجام داده ام.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 31,
+    "question_text": "من به آسانی دچار ترس می شوم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": false
+  },
+  {
+    "order": 32,
+    "question_text": "من از صحبت کردن با دیگران چندان لذت نمی برم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 33,
+    "question_text": "من سعی می کنم همه افکارم را در راستاي واقعیتها هدایت کنم و از پناه بردن به عالم رویا و تخیل. خود داري می نمایم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": true
+  },
+  {
+    "order": 34,
+    "question_text": "من معتقدم اکثر مردم اساسا داراي قصد و نیت خوب و دوستانه اي هستند.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": false
+  },
+  {
+    "order": 35,
+    "question_text": "من مسئولیتهاي اجتماعی از قبیل راي دادن را خیلی جدي نمی گیرم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": true
+  },
+  {
+    "order": 36,
+    "question_text": "خلق و روحیه من بیشتر وقتها ثابت است و زیاد بالا و پایین نمی رود.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": true
+  },
+  {
+    "order": 37,
+    "question_text": "من دوست دارم همیشه افراد زیادي دوروبرم باشند.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": false
+  },
+  {
+    "order": 38,
+    "question_text": "من بعضی مواقع در موسیقی اي که گوش می دهم غرق می شوم.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": false
+  },
+  {
+    "order": 39,
+    "question_text": "اگر نیاز باشد حاضرم از افراد دیگر برای رسیدن ب ه مقاصد خود سوء استفاده کنم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 40,
+    "question_text": "من اشیاء متعلق به خود را تمیز و پاکیزه نگه می دارم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": false
+  },
+  {
+    "order": 41,
+    "question_text": "من بعضی وقتها کاملا احساس بی ارزشی می کنم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 42,
+    "question_text": "من گاهی نمی توانم آن طور که باید از خود قاطعیت نشان دهم.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 43,
+    "question_text": "من به ندرت دچار احساسات و عواطف قوي می شوم.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": true
+  },
+  {
+    "order": 44,
+    "question_text": "من سعی می کنم با همه افرادی که ملاقات می کنم، رفتاري مودب و با نزاکت داشته باشم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": false
+  },
+  {
+    "order": 45,
+    "question_text": "گاهی من آن طور که باید صادق و قابل اعتماد نیستم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": true
+  },
+  {
+    "order": 46,
+    "question_text": "من وقتی با افراد دیگري هستم به ندرت احساس خجالت می کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": true
+  },
+  {
+    "order": 47,
+    "question_text": "من وقتی کاری را انجام می دهم، آن را با علاقه با تمام علاقه و سرعت انجام می دهم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 48,
+    "question_text": "من فکر می کنم یادگرفتن و تمرین سرگرمیها و کارهای ذوقی جدید جالب است.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": false
+  },
+  {
+    "order": 49,
+    "question_text": "در مواردي که لازم باشد، من می توانم از دیگران ایراد بگیرم و به آنها کنایه بزنم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": true
+  },
+  {
+    "order": 50,
+    "question_text": "من داراي اهداف و روشن و مشخصی هستم و برای دستیابی به آنها طبق برنامه منظمی عمل می. کنم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 51,
+    "question_text": "مقاومت در برابر خواستها و هوسهاي آنی برای من آسان نیست.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": false
+  },
+  {
+    "order": 52,
+    "question_text": "من از گذراندن تعطیلات خود در جاهاي شلوغ و پر هیجان لذت نمی برم.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": true
+  },
+  {
+    "order": 53,
+    "question_text": "من بحث و استدلال درباره مطالب فلسفی را کاری بی فاید ه و کسل کننده می دانم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": true
+  },
+  {
+    "order": 54,
+    "question_text": "من ترجیح می دهم که در مورد خودم و موقعیتهایم حرفی نزنم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": false
+  },
+  {
+    "order": 55,
+    "question_text": "من قبل از شروع به هر کاری مقدار زیادي وقت تلف می کنم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": true
+  },
+  {
+    "order": 56,
+    "question_text": "احساس می کنم قادر هستم با بسیاري از مشکلات خود کنار بیایم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 57,
+    "question_text": "من بعضی وقتها حالات شادي یا نشاط بسیار شدیدي را تجربه ) اخساس ( کرده ام.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": false
+  },
+  {
+    "order": 58,
+    "question_text": "من معتقدم که قوانین و سیاستهاي اجتماعی باید تغییر کنند تا نیازهاي یک دنیاي در حال تغییر و. تحول را به خوبی منعکس سازند.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": false
+  },
+  {
+    "order": 59,
+    "question_text": "من از لحاظ نگرشهاي اجتماعی آدمی سختگیر و بی گذشت هستم.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": true
+  },
+  {
+    "order": 60,
+    "question_text": "من قبل از ای ن که تصمیمی بگیرم،در مورد جوانب مختلف مساله به دقت فکر می کنم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 61,
+    "question_text": "من به ندرت احساس ترس و اضطراب می کنم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": true
+  },
+  {
+    "order": 62,
+    "question_text": "من به آدمی خونگرم و خوش رو معرف هستم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 63,
+    "question_text": "من زندگی تخیلی بسیار فعالی دارم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": false
+  },
+  {
+    "order": 64,
+    "question_text": "من عقثده دارم که اکثر مردم اگر به آنها اجازه دا ده شود، از آدم سوء استفاده خواهند کرد.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": true
+  },
+  {
+    "order": 65,
+    "question_text": "من خود را درباره حوادث جاري مطلع نگه می دارم و معمولا تصمیمات عاقلانه اتخاذ می کنم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": false
+  },
+  {
+    "order": 66,
+    "question_text": "من به آدم جوشی و عصبی معرف هستم.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": false
+  },
+  {
+    "order": 67,
+    "question_text": "من معمولا ترجیح می دهم کارها را به تنهایی انجام دهم.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": true
+  },
+  {
+    "order": 68,
+    "question_text": "تماشاي صحنه هاي ) رقص ( باله یا رقصهاي جدید مرا خسته و کسل می کند.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": true
+  },
+  {
+    "order": 69,
+    "question_text": "من حتی اگر بخواهم نمی توانم کسی را گول بزنم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 70,
+    "question_text": "من آدم بسیار منظم و با برنامه اي نیستم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": true
+  },
+  {
+    "order": 71,
+    "question_text": "من به ندرت افسرده و غمگین می شوم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 72,
+    "question_text": "من غالبا در گروههایی که عضو بوده ام سمت رهبري ر ا بر عهده داشته ام.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 73,
+    "question_text": "ا حساس و عاطفه اي که اشیاي مختلف در من ایجاد می کنند برایم مهم است.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": false
+  },
+  {
+    "order": 74,
+    "question_text": "بعضی افراد فکر می کنند من آدم فاقد احساسات و حسابگري هستم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": true
+  },
+  {
+    "order": 75,
+    "question_text": "من بدهی هاي خود را به موقع و به طور کامل می پردازم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": false
+  },
+  {
+    "order": 76,
+    "question_text": "بعضی وقتها طوری احساس خجالت کرده ام که دلم می خواسته خودم را از دیگران مخفی کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": false
+  },
+  {
+    "order": 77,
+    "question_text": "ممکن است کار من کند باشد ولی با ثبات و یکنواخت است.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 78,
+    "question_text": "وقتی که روش صحیح انجام دادن کار را یافتم، به همان روش می چسبم و ادامه می دهم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": true
+  },
+  {
+    "order": 79,
+    "question_text": "در نشان دادن خشم و عصبانیت درنگ و تامل م ی کنم، حتی اگر احساس کنم حق با من است.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": false
+  },
+  {
+    "order": 80,
+    "question_text": "هرگاه برنامه اي برای اصلاح پاره اي از رفتارهاي خود شروع کنم معمولا بعد از چند روز آن را کنار. می گذارم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 81,
+    "question_text": "مقاومت در برابر وسوسه ها و خواهشهاي نفسانی برای من مشکل نیست.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": true
+  },
+  {
+    "order": 82,
+    "question_text": "من بعضی وقتها کارهایی را انجام داده ام که هدف آنها فقط هیجان و لذت بردن بوده است.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": false
+  },
+  {
+    "order": 83,
+    "question_text": "من از حل مساله هاي مشکی یا معما لذت می برم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": false
+  },
+  {
+    "order": 84,
+    "question_text": "من از بیشتر مردم بهتر هستم و این را می دانم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": true
+  },
+  {
+    "order": 85,
+    "question_text": "آدم سازنده و مولدي هستم و همیشه مسئ. لیتهاي خود را به انجام می رسانم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": false
+  },
+  {
+    "order": 86,
+    "question_text": "بعضی مواقع وقتی که تحت فشار روانی زیاد هستم، احساس می کنم که دارم از هم می پاشم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 87,
+    "question_text": "من آدم خوشحال و امیدواري نیستم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": true
+  },
+  {
+    "order": 88,
+    "question_text": "من معتقدم که برای اخذ تصمیم درباره موضوعات اخلاقی باید از رهبران مذهبی خود کسب تکلیف. و تقلید کنیم.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": true
+  },
+  {
+    "order": 89,
+    "question_text": "هرچه در مورد افراد فقی ر و سالمند انجام دهیم باز هم کم است.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": false
+  },
+  {
+    "order": 90,
+    "question_text": "گهگاه من اول عمل می کنم و بعد می اندیشم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 91,
+    "question_text": "من اغلب دچار تنش بوده و عصبی هستم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": false
+  },
+  {
+    "order": 92,
+    "question_text": "بیشتر مردم مرا فردي کم و بیش سرد و غیر اجتماعی می دانند.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 93,
+    "question_text": "من دوست ندارم وقتم را با خیالبافی تلف کنم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": true
+  },
+  {
+    "order": 94,
+    "question_text": "فکر می کنم بیشتر مردمی که با آنها در تماس هستم، افرادی درستکار و قابل اطمینان هستند.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": false
+  },
+  {
+    "order": 95,
+    "question_text": "من غالبا بدون آمادگی کافی در موقعیتهاي مختلف حاضر می شوم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": true
+  },
+  {
+    "order": 96,
+    "question_text": "بیشتر مردم مرا آدمی زود رنج و بداخلاق نمی دانند.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": true
+  },
+  {
+    "order": 97,
+    "question_text": "اگر برای مدت طولانی تنها باشم، واقع ا احساس می کنم به افراد دیگر نیازمند هستم.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": false
+  },
+  {
+    "order": 98,
+    "question_text": "نظم و ترتیب خاصی که در هنر و طبیعت می بینم برای من بسیار جالب و شوق انگیز است.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": false
+  },
+  {
+    "order": 99,
+    "question_text": "کاملا صادق و درستکار بودن برای تجارت و کاسبی خوب نیست.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 100,
+    "question_text": "دوست دارم هر چیزي را در جاي مخصوص آن نگهدارم تا جاي آن را به خوبی بدانم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": false
+  },
+  {
+    "order": 101,
+    "question_text": "من گاهی دچار احساس پشیمانی و گناهکاری شدید شده ام.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 102,
+    "question_text": "در جلسات جمعی من می گذارم دیگران بیشتر حرف ها را بزنند.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 103,
+    "question_text": "به ندرت به احساس آنی خودم توجه می کنم.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": true
+  },
+  {
+    "order": 104,
+    "question_text": "من غالبا سعی می کنم نسبت به افکار و احساسات دیگر ان آگاهی و احترام نشان دهم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": false
+  },
+  {
+    "order": 105,
+    "question_text": "من گاهی دربازي شطرنج یا ورزش تقلب می کنم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": true
+  },
+  {
+    "order": 106,
+    "question_text": "اگر مردم مرا دست بیاندازند و مسخره کنند من زیاد احساس ناراحتی و خجالت نمی کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": true
+  },
+  {
+    "order": 107,
+    "question_text": "من اغلب احساس می کنم که سرشار از نیرو و توان هستم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 108,
+    "question_text": "من اغلب غذاهای جدید و نا آشنا را امتحان می کنم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": false
+  },
+  {
+    "order": 109,
+    "question_text": "من اگر اشخاصی را دوست نداشته باشم آن را از آنها مخفی می کنم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": true
+  },
+  {
+    "order": 110,
+    "question_text": "من برای دستیابی به اهداف خود سخت تلاش می کنم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 111,
+    "question_text": "وقتی به غذاي مورد علاقه ام دسترسی پیدا کنم غالبا بیش از حد معمول می خورم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": false
+  },
+  {
+    "order": 112,
+    "question_text": "من معمولا از تماشاي فیلمهاي منزجر کننده یا وحشتناك خودداري می کنم.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": true
+  },
+  {
+    "order": 113,
+    "question_text": "بعضی مواقع که مردم در مورد مسائل خیلی انتزاعی و نظري صحبت می کنند من علاقه ام را از. دست می دهم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": true
+  },
+  {
+    "order": 114,
+    "question_text": "من سعی می کنم آدم افتاده و فروتنی باشم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": false
+  },
+  {
+    "order": 115,
+    "question_text": "من به زحمت می توانم خود را وادار به کاری کنم که باید انجام دهم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": true
+  },
+  {
+    "order": 116,
+    "question_text": "من در مواقع اضطراري می توانم خونسردي خودم را حفظ کنم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 117,
+    "question_text": "من گاهی بیش از اندازه احساس خوشبختی می کنم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": false
+  },
+  {
+    "order": 118,
+    "question_text": "من معتقدم که عقاید متفاوت افراد جوامع دیگر در مورد حق و ناحق از نظر خود آنها معتبر است.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": false
+  },
+  {
+    "order": 119,
+    "question_text": "من در مورد آدمهایی که در خیابانها گدایی می کنند هیچ گونه اخساس همدردي نمی کنم.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": true
+  },
+  {
+    "order": 120,
+    "question_text": "من همیشه قبل از اینکه دست به عملی بزنم پیامدهاي آن را مورد توجه قرار می دهم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 121,
+    "question_text": "من به ندرت درباره آینده احساس ترس و نگرانی می کنم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": true
+  },
+  {
+    "order": 122,
+    "question_text": "من واقعا از صحبت کردن با دیگران لذت می برم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 123,
+    "question_text": "من از تمرکز حواس روي یک موضوع خیالی یا \" رویا در بیداري \" و بررسی امکانات مختلف ناشی از. آن لذت می برم و به این رویاها اجازه می دهم رشد کرده و شاخ و برگ پیدا کنند.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": false
+  },
+  {
+    "order": 124,
+    "question_text": "هرگاه شخصی در مورد من کار خوبی انجام می د هد نسبت به او احساس بدگمانی و سوء ظن می. کنم.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": true
+  },
+  {
+    "order": 125,
+    "question_text": "من به خاطر درستی قضاوتم به خود می بالم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": false
+  },
+  {
+    "order": 126,
+    "question_text": "من اغلب نسبت به افرادی که با آنها سروکار دارم احساس تنفر و بیزاري می کنم.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": false
+  },
+  {
+    "order": 127,
+    "question_text": "من کارهایی را ترجیح می دهم که بتوانم به تنهایی و بدون تحمل مزاحمت د یگران انجام دهم.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": true
+  },
+  {
+    "order": 128,
+    "question_text": "شعر تاثیر چندانی روي من ندارد.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": true
+  },
+  {
+    "order": 129,
+    "question_text": "از این که به عنوان آدم ریاکاری شناخته شوم متنفرم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 130,
+    "question_text": "به نظر نمی رسد که هرگز بتوانم کارهای خود را نظم و ترتیب بدهم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": true
+  },
+  {
+    "order": 131,
+    "question_text": "هرگاه اشتباهی رخ دهد یا عیب و ایرادي پیش بیاید من خودم ر ا سرزنش می کنم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 132,
+    "question_text": "افراد دیگر اغلب در تصمیم گیري خود از من کسب تکلیف ) یا به عنوان الگو ( استفاده می کنند.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 133,
+    "question_text": "هیجانات و احساسات گوناگونی به من دست می دهد.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": false
+  },
+  {
+    "order": 134,
+    "question_text": "من به سخاوت و دست و دلبازي مشهور نیستم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": true
+  },
+  {
+    "order": 135,
+    "question_text": "همیشه وقتی قول انجام دادن کار ي را می دهم مردم می توانند به انجام گرفتن آن کار اطمینان. کنند.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": false
+  },
+  {
+    "order": 136,
+    "question_text": "من اغلب نسبت به دیگران احساس حقارت می کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": false
+  },
+  {
+    "order": 137,
+    "question_text": "من به اندازه دیگران چابک و سرزنده نیستم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 138,
+    "question_text": "ترجیح می دهم وقتم را در محیط هاي مانوس و آشنا بگذرانم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": true
+  },
+  {
+    "order": 139,
+    "question_text": "وقتی شخصی به م ن توهین کند من فقط سعی می کنم او را ببخشم و فراموش کنم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": false
+  },
+  {
+    "order": 140,
+    "question_text": "من احساس نمی کنم که مجبورم با دیگران رقابت نموده و از آنان بهتر باشم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 141,
+    "question_text": "من به ندرت در مقابل خواستهاي آنی خود تسلیم می شوم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": true
+  },
+  {
+    "order": 142,
+    "question_text": "من ترجیح می دهم در جاهایی باشم که کانون فعالیت و عمل است.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": false
+  },
+  {
+    "order": 143,
+    "question_text": "من از سرو کله زدن با مسائل و معماهایی که ذهن آدم را به کوشش و چالش وادار می کند لذت. می برم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": false
+  },
+  {
+    "order": 144,
+    "question_text": "من در مورد خودم نظر بسیار مثبتی دارم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": true
+  },
+  {
+    "order": 145,
+    "question_text": "وقتی کاری را شروع می کنم معمولا کعمولا همیشه آن را به اتمام می رسانم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": false
+  },
+  {
+    "order": 146,
+    "question_text": "غالبا ت صمیم گرفتن و اتخاذ یک روش قطعی برای من مشکل است.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 147,
+    "question_text": "من خودم را آدم خیلی شنگول و سرزنده اي نمی دانم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": true
+  },
+  {
+    "order": 148,
+    "question_text": "من معتقدم که وفاداري به آرمان ها و اصول مورد قبول خودم، بیش از \" آزادمنشی \" و \" بی تعصب. بودن \" اهمیت دارد.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": true
+  },
+  {
+    "order": 149,
+    "question_text": "نیازهاي انسانی افراد همیش ه باید بر ملاحظات اقتصادي دولت اولویت داده شود.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": false
+  },
+  {
+    "order": 150,
+    "question_text": "من غالبا کارها را بدون تامل قبلی و به خاطر یک انگیزه آنی انجام می دهم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 151,
+    "question_text": "من اغلب نگران این هستم که مبادا کارها طبق نقشه و به درستی پیش نروند.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": false
+  },
+  {
+    "order": 152,
+    "question_text": "لبخند زدن به افراد غریبه و برقراري ارت باط با آنها برای من آسان است.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 153,
+    "question_text": "هر وقت احساس کنم ذهنم در جهت خیال پردازي می رود معمولا خودم را به کاری مشغول می. کنم و به جاي خیال پردازي، حواسم را روي آن کار متمرکز می سازم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": true
+  },
+  {
+    "order": 154,
+    "question_text": "واکنش اولیه من به مردم آن است که به آنها اعتماد کنم.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": false
+  },
+  {
+    "order": 155,
+    "question_text": "م ن ظاهرا در هیچ کاری موفق نمی شوم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": true
+  },
+  {
+    "order": 156,
+    "question_text": "من خیلی به ندرت واقعا عصبانی می شوم.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": true
+  },
+  {
+    "order": 157,
+    "question_text": "ترجیح می دهم تعطیلات خود را در یک ساحل عمومی شلوغ بگذرانم تا در سک کلبه جنگلی دور. افتاده.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": false
+  },
+  {
+    "order": 158,
+    "question_text": "انواع خاصی از موسیقی بیش از اندازه برای من شورانگیز هستند.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": false
+  },
+  {
+    "order": 159,
+    "question_text": "بعضی وقتها مردم را با چرب زبانی و تقلب به انجام دادن کارهای مورد نظر خودم وادار می کنم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 160,
+    "question_text": "من معمولا آدمی کم رو و زیاد سختگیر و پرتوقع هستم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": false
+  },
+  {
+    "order": 161,
+    "question_text": "من نسبت به خودم نظري منفی دارم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 162,
+    "question_text": "ترجیح می دهم دنبال کارهای خودم را بگیرم تا این که ره بر گروه بشوم.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 163,
+    "question_text": "به ندرت متوجه خلق و عواطفی می شوم که محیط هاي مختلف به وجود می آورند.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": true
+  },
+  {
+    "order": 164,
+    "question_text": "بیشتر مردمی که می‌شناسم مرا دوست دارند.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": false
+  },
+  {
+    "order": 165,
+    "question_text": "من دقیقا از اصول اخلاقی پیروي می کنم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": true
+  },
+  {
+    "order": 166,
+    "question_text": "من در حضور روساي خود و دیگر افراد مهم و صاحب قدرت احسا س آرامش و راحتی می کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": true
+  },
+  {
+    "order": 167,
+    "question_text": "من معمولا در حال عجله به نظر می رسم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 168,
+    "question_text": "بعضی مواقع تنها برای این که کار تازه اي انجام داده باشم محل اثاثیه خانه را تغییر می دهم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": false
+  },
+  {
+    "order": 169,
+    "question_text": "اگر کسی با من شروع به دعوا و مرافعه کند من آماده ام جواب او را با دعوا بدهم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": true
+  },
+  {
+    "order": 170,
+    "question_text": "من تلاش می کنم تمام چیزهایی را که می توانم، به دست آورم ) کسب کنم (.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 171,
+    "question_text": "من گاهی آنقدر غذا می خورم که بالا می آورم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": false
+  },
+  {
+    "order": 172,
+    "question_text": "من عاشق ترس هیجانی هستم که معمولا سوار شدن در چرخ و فلک یا کارهای خطرناك دیگر. ایجاد می کند.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": true
+  },
+  {
+    "order": 173,
+    "question_text": "من علاقه اي به تامل و تفکر جدي درباره سرنوشت جهان یا انسان ندارم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": true
+  },
+  {
+    "order": 174,
+    "question_text": "من احساس می کنم که مزیتی یر افراد دیگر ندارم ) صرف نظر از موقعیت و وضع افراد (.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": false
+  },
+  {
+    "order": 175,
+    "question_text": "وقتی در اجراي یک طرح یا نقشه با مشکل روبه رو می شوم تمایل پیدا می کنم طرح دیگري را. شروع کنم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": true
+  },
+  {
+    "order": 176,
+    "question_text": "در یک موقعیت بحرانی به خوبی می توانم خودم را کنترل و اداره کنم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 177,
+    "question_text": "من آدم خوش مشرب شاد و با روحیه اي هستم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": false
+  },
+  {
+    "order": 178,
+    "question_text": "من خود را آدمی با سعه صدر می دانم که می تواند راه و رسم زندگی و طرز تفکر دیگران را به. خوبی قبول نماید.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": false
+  },
+  {
+    "order": 179,
+    "question_text": "من معتقدم که همه انسانها با ارزش و قابل احترام اند.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": true
+  },
+  {
+    "order": 180,
+    "question_text": "من به ندرت تصمیمی عجولانه می گیرم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 181,
+    "question_text": "در مقایسه با بیشتر مردم من از چیزهاي کمتري می ترسم.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": true
+  },
+  {
+    "order": 182,
+    "question_text": "من به دوستان خود وابستگی عاطفی زیادي دارم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 183,
+    "question_text": "بچه که بودم هرگز از بازیهایی که مس تلزم تقلید نقش دیگران باشد لذت نمی بردم.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": false
+  },
+  {
+    "order": 184,
+    "question_text": "من معمولا در مورد افراد دیگر خوشبین هستم.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": true
+  },
+  {
+    "order": 185,
+    "question_text": "من فرد بسیار شایسته و کارایی هستم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": false
+  },
+  {
+    "order": 186,
+    "question_text": "بعضی وقتها نسبت به دیگران احساس خصومت و آزردگی کرده ام.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": false
+  },
+  {
+    "order": 187,
+    "question_text": "معمولا معاشرت و گردهمایی هاي اجتماعی برای من ناخوشایند و کسل کننده هستند.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": true
+  },
+  {
+    "order": 188,
+    "question_text": "بعضی مواقع که شعري را می خوانم یا به یک اثر هنري نگاه می کنم موجی از احساس افسردگی یا. هیجان مرا دربر می گیرد.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": true
+  },
+  {
+    "order": 189,
+    "question_text": "من بعضی وقتها با اعمال زور یا تملق و خوش آمدگویی مردم را به انجام دادن کارهای مورد نظرم. وادار می کنم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 190,
+    "question_text": "من در مورد تمیز کردن چیزها وسواس ندارم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": true
+  },
+  {
+    "order": 191,
+    "question_text": "بعضی وقتها زندگی به نظرم تیره و نومید کننده می آید.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 192,
+    "question_text": "در موقع صحبت کردن با دیگران من غالبا بیشتر از دیگران حرف می زنم.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 193,
+    "question_text": "هم حس شدن با دیگران یعنی داشتن همان احساسی که دیگرا ن دارند، برای من آسان است.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": false
+  },
+  {
+    "order": 194,
+    "question_text": "من خودم را آدم خیر و نیکوکاری می دانم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": true
+  },
+  {
+    "order": 195,
+    "question_text": "من سعی می کنم کارهای خودم را با دقت انجام دهم تا الزامی برای انجام دادن مجدد آنها پیش. نیاید.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": false
+  },
+  {
+    "order": 196,
+    "question_text": "اگر در مورد فردي حرف بدي زده یا کار غلطی انجام داده باشم به سختی م ی توانم بار دیگر به روي. او نگاه کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": false
+  },
+  {
+    "order": 197,
+    "question_text": "همه زندگی و کارهای من با سرعت انجام می شود.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 198,
+    "question_text": "در موقع استفاده از تعطیلات ترجیح می دهم که به جاهایی بروم که قبلا آن محل ها را امتحان. کرده و به درستی شناخته ام.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": true
+  },
+  {
+    "order": 199,
+    "question_text": "من آدم کله شق و سرسختی هستم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": false
+  },
+  {
+    "order": 200,
+    "question_text": "سعی می کنم همه کارهای خودم را به بهترین نحو انجام دهم.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 201,
+    "question_text": "من بعضی مواقع کارهایی را بدون تامل انجام می دهم و بعدا پشیمان می شوم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": true
+  },
+  {
+    "order": 202,
+    "question_text": "من از رنگهاي روشن و لباسهاي پر زرق و برق خوشم می آید.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": false
+  },
+  {
+    "order": 203,
+    "question_text": "من کنجکاوي فکري زیادي دارم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": false
+  },
+  {
+    "order": 204,
+    "question_text": "من ترجیح می دهم از دیگران تمجید تا این که خودم مورد تمجید قرار گیرم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": true
+  },
+  {
+    "order": 205,
+    "question_text": "آنقدر خرده کاری برای انجام دادن کارها وجود دارد که گاهی همه آنها را نادیده می گیرم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": false
+  },
+  {
+    "order": 206,
+    "question_text": "در شرایطی که به نظر می رسد همه چیز به طور غلط پیش می رود، من بازهم می توانم تصمیمات. خ وبی اتخاذ کنم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": false
+  },
+  {
+    "order": 207,
+    "question_text": "من به ندرت برای توصیف تجارب خود از کلماتی چون \" فوق العاده \" یا \" جنجالی \" استفاده می کنم.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": true
+  },
+  {
+    "order": 208,
+    "question_text": "فکر می کنم اگر شخصی در سن 25 سالگی هنوز نداند به چه چیزهایی اعتقاد دارد باید در سلامت. او شک کرد.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": true
+  },
+  {
+    "order": 209,
+    "question_text": "نسبت به افرادی که کمتر از م ن خوشبخت هستند احساس همدردي می کنم.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": false
+  },
+  {
+    "order": 210,
+    "question_text": "من قبل از رفتن به یک مسافرت به دقت برنامه ریزي می کنم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 211,
+    "question_text": "بعضی مواقع افکار ترسناکی به ذهن من می آیند.",
+    "domain_key": "N",
+    "facet_key": "N1",
+    "facet_label": "اضطراب",
+    "reverse_scored": false
+  },
+  {
+    "order": 212,
+    "question_text": "من نسبت به همه همکاران خود نوعی علاقه و مسئولیت شخصی احساس می کنم.",
+    "domain_key": "E",
+    "facet_key": "E1",
+    "facet_label": "صمیمیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 213,
+    "question_text": "من نمی توانم ا جازه دهم افکارم در هر جهتی که می خواهند سیر کنند.",
+    "domain_key": "O",
+    "facet_key": "O1",
+    "facet_label": "تخیل",
+    "reverse_scored": true
+  },
+  {
+    "order": 214,
+    "question_text": "من به طبیعت و ذات انسان بسیار اعتقاد دارم.",
+    "domain_key": "A",
+    "facet_key": "A1",
+    "facet_label": "اعتماد",
+    "reverse_scored": false
+  },
+  {
+    "order": 215,
+    "question_text": "من در کار خود فردي موثر و کارآمد هستم.",
+    "domain_key": "C",
+    "facet_key": "C1",
+    "facet_label": "کفایت",
+    "reverse_scored": true
+  },
+  {
+    "order": 216,
+    "question_text": "حتی آزردگیه و ناراحتی هاي خیلی کوچک می توانند در من احساس ناکامی و محرومیت کنند.",
+    "domain_key": "N",
+    "facet_key": "N2",
+    "facet_label": "پرخاشگری",
+    "reverse_scored": false
+  },
+  {
+    "order": 217,
+    "question_text": "من از میهمانیهاي بزرگ. پر جمعیت لذت می برم.",
+    "domain_key": "E",
+    "facet_key": "E2",
+    "facet_label": "جمع‌گرایی",
+    "reverse_scored": false
+  },
+  {
+    "order": 218,
+    "question_text": "من از خواندن اشعاري که روي احساسات و تخیلات تاکید می کنند بیشتر لذت می برم تا اشعاري. که داستان خاصی را بیان می کنند.",
+    "domain_key": "O",
+    "facet_key": "O2",
+    "facet_label": "زیبایی‌پسندی",
+    "reverse_scored": false
+  },
+  {
+    "order": 219,
+    "question_text": "من از زیرکی خودم در کنترل و اداره مردم به خود می بالم.",
+    "domain_key": "A",
+    "facet_key": "A2",
+    "facet_label": "سادگی",
+    "reverse_scored": true
+  },
+  {
+    "order": 220,
+    "question_text": "من وقت زیادي ر ا برای پیدا کردن اشیایی که در جایی اشتباهی گذاشته ام،می گذرانم.",
+    "domain_key": "C",
+    "facet_key": "C2",
+    "facet_label": "نظم و قدرت",
+    "reverse_scored": false
+  },
+  {
+    "order": 221,
+    "question_text": "بیشتر وقتها که کارها طبق نقشه پیش نمی روند یا اشتباه از آب در می آیند احساس دلسردي می. کنم و می خواهم آنها را ناتمام رها کنم.",
+    "domain_key": "N",
+    "facet_key": "N3",
+    "facet_label": "افسردگی",
+    "reverse_scored": false
+  },
+  {
+    "order": 222,
+    "question_text": "قبول مسئولیت اداره یا رهبري یک موقعیت برای من آ سان نیست.",
+    "domain_key": "E",
+    "facet_key": "E3",
+    "facet_label": "قاطعیت",
+    "reverse_scored": true
+  },
+  {
+    "order": 223,
+    "question_text": "اشیاي غیرعادي از قبیل بعضی عطرها یا اسامی مکانهاي دور می توانند احساسات و عواطف. شدیدي را در من ایجاد کنند.",
+    "domain_key": "O",
+    "facet_key": "O3",
+    "facet_label": "احساسات",
+    "reverse_scored": true
+  },
+  {
+    "order": 224,
+    "question_text": "اگر بتوانم به دیگران کمک کنم به آسانی و بدون درخواست آنها این کار را انجام می دهم.",
+    "domain_key": "A",
+    "facet_key": "A3",
+    "facet_label": "نوع‌دوستی",
+    "reverse_scored": false
+  },
+  {
+    "order": 225,
+    "question_text": "من واقعا باید مریض باشم تا یک روز بر سر کار حاضر نشوم.",
+    "domain_key": "C",
+    "facet_key": "C3",
+    "facet_label": "وظیفه‌شناسی",
+    "reverse_scored": true
+  },
+  {
+    "order": 226,
+    "question_text": "وقتی آشنایان من کار احمقانه اي را انجام می دهند، به جاي آنها مت احساس خجالت می کنم.",
+    "domain_key": "N",
+    "facet_key": "N4",
+    "facet_label": "حساسیت به خود",
+    "reverse_scored": true
+  },
+  {
+    "order": 227,
+    "question_text": "من شخص بسیار فعالی هستم.",
+    "domain_key": "E",
+    "facet_key": "E4",
+    "facet_label": "فعالیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 228,
+    "question_text": "من وقتی به جایی می روم از همان مسیر همیشگی استفاده می کنم.",
+    "domain_key": "O",
+    "facet_key": "O4",
+    "facet_label": "اعمال",
+    "reverse_scored": false
+  },
+  {
+    "order": 229,
+    "question_text": "من اغلب با اعضاي خا نواده و همکارانم بگو مگو ندارم.",
+    "domain_key": "A",
+    "facet_key": "A4",
+    "facet_label": "تبعییت",
+    "reverse_scored": true
+  },
+  {
+    "order": 230,
+    "question_text": "من از جمله افراد \" معتاد به کار \" هستم که نمی توانند هرگز بیکار بنشینند.",
+    "domain_key": "C",
+    "facet_key": "C4",
+    "facet_label": "تلاش برای موفقیت",
+    "reverse_scored": false
+  },
+  {
+    "order": 231,
+    "question_text": "من همیشه می توانم احساساتم را کنترل کنم.",
+    "domain_key": "N",
+    "facet_key": "N5",
+    "facet_label": "تکانش‌وری",
+    "reverse_scored": false
+  },
+  {
+    "order": 232,
+    "question_text": "در حوادث ورزشی دوست دارم جزیی از جمعیت باشم و مثل بقیه رفتار کنم.",
+    "domain_key": "E",
+    "facet_key": "E5",
+    "facet_label": "هیجان‌خواهی",
+    "reverse_scored": true
+  },
+  {
+    "order": 233,
+    "question_text": "من علا ئق فکري وسیع و متنوعی دارم.",
+    "domain_key": "O",
+    "facet_key": "O5",
+    "facet_label": "عقاید",
+    "reverse_scored": true
+  },
+  {
+    "order": 234,
+    "question_text": "من آدم مهم و برتري هستم.",
+    "domain_key": "A",
+    "facet_key": "A5",
+    "facet_label": "شاخص تواضع",
+    "reverse_scored": false
+  },
+  {
+    "order": 235,
+    "question_text": "من آدم بسیار با نضباطی هستم و می توانم خود را خوب کنترل کنم.",
+    "domain_key": "C",
+    "facet_key": "C5",
+    "facet_label": "خویشتنداری",
+    "reverse_scored": true
+  },
+  {
+    "order": 236,
+    "question_text": "من از لحاظ عاطفی فردي کاملا باثبات و متعادل هستم.",
+    "domain_key": "N",
+    "facet_key": "N6",
+    "facet_label": "آسیب‌پذیری",
+    "reverse_scored": true
+  },
+  {
+    "order": 237,
+    "question_text": "من زود خنده ام می گیرد.",
+    "domain_key": "E",
+    "facet_key": "E6",
+    "facet_label": "هیجان مثبت",
+    "reverse_scored": false
+  },
+  {
+    "order": 238,
+    "question_text": "به عقیده من فسفه جدید \" آزادي فردي \" فلسفه قابل قبولی نیست.",
+    "domain_key": "O",
+    "facet_key": "O6",
+    "facet_label": "ارزش‌ها",
+    "reverse_scored": false
+  },
+  {
+    "order": 239,
+    "question_text": "ترچیح می دهم دیگران مرا فردي دل رحم و خطا بخش بشناسند تا صرفا طرفدار اجراي عدالت.",
+    "domain_key": "A",
+    "facet_key": "A6",
+    "facet_label": "درک دیگران",
+    "reverse_scored": true
+  },
+  {
+    "order": 240,
+    "question_text": "من قبل از پاسخ دادن به هر سوال به دقت درباره آن فکر می کنم.",
+    "domain_key": "C",
+    "facet_key": "C6",
+    "facet_label": "محتاط در تصمیم‌گیری",
+    "reverse_scored": false
+  }
+]
