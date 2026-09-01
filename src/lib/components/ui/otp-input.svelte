@@ -100,7 +100,14 @@
 	}
 </script>
 
-<div class={cn('flex w-full justify-center gap-2 sm:gap-2.5', className)} dir="ltr">
+<div
+	class={cn(
+		'flex w-full justify-center',
+		length >= 6 ? 'gap-1 sm:gap-1.5' : 'gap-2 sm:gap-2.5',
+		className
+	)}
+	dir="ltr"
+>
 	{#each values as value, index}
 		<input
 			bind:this={inputRefs[index]}
@@ -117,11 +124,11 @@
 			onfocus={() => handleFocus(index)}
 			{disabled}
 			class="
-				h-12 w-11 rounded-xl border bg-background text-center text-lg font-semibold
+				rounded-xl border bg-background text-center font-semibold
 				text-foreground transition-colors
 				focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background
 				disabled:cursor-not-allowed disabled:opacity-50
-				sm:h-12 sm:w-12
+				{length >= 6 ? 'h-11 w-9 text-base sm:h-12 sm:w-10 sm:text-lg' : 'h-12 w-11 text-lg sm:h-12 sm:w-12'}
 				{error
 					? 'border-destructive focus:border-destructive focus:ring-destructive'
 					: 'border-input hover:border-border focus:border-ring'}

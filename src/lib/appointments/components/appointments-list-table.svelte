@@ -24,6 +24,7 @@
 	} from '../appointment-range-filter';
 	import AppointmentRescheduleDialog from './appointment-reschedule-dialog.svelte';
 	import AppointmentPatientEditDialog from './appointment-patient-edit-dialog.svelte';
+	import SecretarySmsDialog from '$lib/desk/components/secretary-sms-dialog.svelte';
 	import { formatFaDate, formatFaTime } from '$lib/date';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -34,7 +35,7 @@
 	import Button from '$lib/components/ui/button.svelte';
 	import Dialog from '$lib/components/ui/dialog.svelte';
 	import { DropdownMenu } from 'bits-ui';
-	import { LoaderCircle, MoreHorizontal, Plus, XCircle, CalendarClock, Pencil } from '@lucide/svelte';
+	import { LoaderCircle, MoreHorizontal, Plus, XCircle, CalendarClock, Pencil, MessageSquareText } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 
 	let {
@@ -60,6 +61,8 @@
 	let rescheduleTarget = $state<AppointmentListItem | null>(null);
 	let editOpen = $state(false);
 	let editTarget = $state<AppointmentListItem | null>(null);
+	let smsOpen = $state(false);
+	let smsTarget = $state<AppointmentListItem | null>(null);
 	let cancelling = $state(false);
 	let actionError = $state('');
 	let openMenuId = $state<string | null>(null);
@@ -71,6 +74,22 @@
 	const isPatientView = $derived(user?.role === 'patient');
 	const clickablePatients = $derived(canNavigateToPatientFromAppointment(user?.role));
 	const canManage = $derived(canManageAppointmentActions(user?.role));
+	const canSendPatientSms = $derived(user?.role === 'admin' || user?.role === 'secretary');
+
+	function canSmsRow(apt: AppointmentListItem) {
+		return (
+			canSendPatientSms &&
+			apt.phone &&
+			apt.phone !== '—' &&
+			apt.phone.replace(/\D/g, '').length >= 10
+		);
+	}
+
+	function requestSms(apt: AppointmentListItem) {
+		smsTarget = apt;
+		smsOpen = true;
+		openMenuId = null;
+	}
 
 	function openPatient(patientUserId: string) {
 		if (!clickablePatients || !patientUserId || !user) return;
@@ -419,7 +438,7 @@
 												</Button>
 											{/if}
 										</div>
-									{:else if canRescheduleRow(apt) || canCancelRow(apt)}
+									{:else if canRescheduleRow(apt) || canCancelRow(apt) || canSmsRow(apt)}
 										<DropdownMenu.Root
 											open={openMenuId === apt.id}
 											onOpenChange={(v) => {
@@ -454,6 +473,15 @@
 														>
 															<XCircle class="h-4 w-4" />
 															لغو نوبت
+														</DropdownMenu.Item>
+													{/if}
+													{#if canSmsRow(apt)}
+														<DropdownMenu.Item
+															class={menuItemClass}
+															onSelect={() => requestSms(apt)}
+														>
+															<MessageSquareText class="h-4 w-4" />
+															ارسال پیامک
 														</DropdownMenu.Item>
 													{/if}
 												</DropdownMenu.Content>
@@ -566,8 +594,8 @@
 									</p>
 								{/if}
 							</div>
-						{:else if canRescheduleRow(apt) || canCancelRow(apt)}
-							<div class="mt-3 flex gap-2 border-t border-border/40 pt-3">
+						{:else if canRescheduleRow(apt) || canCancelRow(apt) || canSmsRow(apt)}
+							<div class="mt-3 flex flex-wrap gap-2 border-t border-border/40 pt-3">
 								{#if canRescheduleRow(apt)}
 									<Button
 										variant="outline"
@@ -588,6 +616,17 @@
 									>
 										<XCircle class="ml-1.5 h-3.5 w-3.5" />
 										لغو
+									</Button>
+								{/if}
+								{#if canSmsRow(apt)}
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-8 flex-1 rounded-lg"
+										onclick={() => requestSms(apt)}
+									>
+										<MessageSquareText class="ml-1.5 h-3.5 w-3.5" />
+										پیامک
 									</Button>
 								{/if}
 							</div>
@@ -663,3 +702,12 @@
 />
 
 <AppointmentPatientEditDialog bind:open={editOpen} bind:appointment={editTarget} onSaved={onChanged} />
+
+<SecretarySmsDialog
+	bind:open={smsOpen}
+	phone={smsTarget?.phone ?? ''}
+	patientName={smsTarget?.patientName ?? ''}
+	doctorName={smsTarget?.doctorName ?? ''}
+	appointmentDate={smsTarget ? formatFaDate(smsTarget.dateTime) : ''}
+	appointmentTime={smsTarget ? formatFaTime(smsTarget.dateTime) : ''}
+/>

@@ -27,14 +27,12 @@ jobs:
         run: npm run build
         env:
           POCKETBASE_URL: http://127.0.0.1:8090
-          POCKETBASE_ADMIN_EMAIL: ci@example.com
-          POCKETBASE_ADMIN_PASSWORD: ci-password-placeholder
+          POCKETBASE_ADMIN_EMAIL: ci@hoomban.local
+          POCKETBASE_ADMIN_PASSWORD: CiTestPassword123!
 
   acl:
     runs-on: ubuntu-latest
     needs: check
-    continue-on-error: true
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +52,7 @@ jobs:
 
       - name: Start PocketBase and verify ACL
         run: |
+          ./pocketbase-bin/pocketbase superuser upsert ci@hoomban.local CiTestPassword123! --dir=./pocketbase/pb_data
           ./pocketbase-bin/pocketbase serve --dir=./pocketbase/pb_data --migrationsDir=./pocketbase/pb_migrations --http=127.0.0.1:8090 &
           for i in $(seq 1 30); do
             curl -sf http://127.0.0.1:8090/api/health >/dev/null && break
@@ -62,5 +61,5 @@ jobs:
           curl -sf http://127.0.0.1:8090/api/health
           npm run verify:acl
         env:
-          POCKETBASE_ADMIN_EMAIL: ${{ secrets.POCKETBASE_ADMIN_EMAIL }}
-          POCKETBASE_ADMIN_PASSWORD: ${{ secrets.POCKETBASE_ADMIN_PASSWORD }}
+          POCKETBASE_ADMIN_EMAIL: ci@hoomban.local
+          POCKETBASE_ADMIN_PASSWORD: CiTestPassword123!

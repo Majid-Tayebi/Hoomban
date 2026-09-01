@@ -41,6 +41,7 @@
 		"jalaali-js": "^2.0.1",
 		"lucide-svelte": "^1.0.1",
 		"pocketbase": "^0.27.1",
+		"redis": "^6.2.1",
 		"svelte-chartjs": "^4.0.1",
 		"web-push": "^3.6.7"
 	}

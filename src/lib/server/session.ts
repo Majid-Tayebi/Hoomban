@@ -1,9 +1,8 @@
 import type { Cookies } from '@sveltejs/kit';
-import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
+import { resolveUserFromAuthToken } from '$lib/server/auth-token';
 
 export const SESSION_COOKIE = 'hoomban_auth';
-const PB_URL = env.POCKETBASE_URL || 'http://127.0.0.1:8090';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
 export type SessionUser = {
@@ -36,20 +35,14 @@ export async function getSessionUser(cookies: Cookies): Promise<SessionUser | nu
 	const token = getSessionToken(cookies);
 	if (!token) return null;
 
-	const pb = new PocketBase(PB_URL);
-	try {
-		pb.authStore.save(token, null as never);
-		const auth = await pb.collection('users').authRefresh();
-		const model = auth.record as unknown as SessionUser & { id?: string };
-		if (!model?.id) return null;
-		return {
-			id: model.id,
-			role: String(model.role || 'patient'),
-			name: model.name,
-			email: model.email,
-			mobile: model.mobile
-		};
-	} catch {
-		return null;
-	}
+	const resolved = await resolveUserFromAuthToken(token);
+	if (!resolved) return null;
+
+	return {
+		id: resolved.id,
+		role: resolved.role,
+		name: resolved.name,
+		email: resolved.email,
+		mobile: resolved.mobile
+	};
 }

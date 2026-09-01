@@ -10,7 +10,9 @@
 	import PatientCareTimeline from '$lib/patients/detail/components/patient-care-timeline.svelte';
 	import { buildCareTimeline } from '$lib/patients/detail/care-timeline';
 	import PatientAccountingPanel from '$lib/desk/components/patient-accounting-panel.svelte';
-	import { ArrowRight } from '@lucide/svelte';
+	import SecretarySmsDialog from '$lib/desk/components/secretary-sms-dialog.svelte';
+	import Button from '$lib/components/ui/button.svelte';
+	import { ArrowRight, MessageSquareText } from '@lucide/svelte';
 
 	let user = $derived(getUser());
 	let patientId = $derived($page.params.id);
@@ -24,6 +26,7 @@
 	let data = $state<PatientDeskData | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+	let smsOpen = $state(false);
 
 	const careTimeline = $derived(data ? buildCareTimeline(data.appointments) : []);
 
@@ -97,6 +100,19 @@
 				emergencyContact: data.contact.emergencyContact
 			}}
 			meta={data.meta}
+		/>
+
+		<div class="flex justify-end">
+			<Button variant="outline" class="rounded-xl gap-2" onclick={() => (smsOpen = true)}>
+				<MessageSquareText class="h-4 w-4" />
+				ارسال پیامک
+			</Button>
+		</div>
+
+		<SecretarySmsDialog
+			bind:open={smsOpen}
+			phone={data.contact.phone}
+			patientName={data.name}
 		/>
 
 		<PatientAccountingPanel

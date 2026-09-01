@@ -1,8 +1,4 @@
-import { env } from '$env/dynamic/private';
-import PocketBase from 'pocketbase';
-import { getServerPb } from '$lib/server/pocketbase';
-
-const PB_URL = env.POCKETBASE_URL || 'http://127.0.0.1:8090';
+import { resolveUserFromAuthToken } from '$lib/server/auth-token';
 
 export type RequestAuthUser = {
 	id: string;
@@ -20,34 +16,14 @@ export async function getAuthUserFromRequest(
 	const token = authHeader.slice(7).trim();
 	if (!token) return null;
 
-	const pb = getServerPb();
-	try {
-		pb.authStore.save(token, null as never);
-		const auth = await pb.collection('users').authRefresh();
-		const model = auth.record as { id?: string; role?: string };
-		if (!model?.id) return null;
-		return {
-			id: model.id,
-			role: String(model.role || 'patient'),
-			token
-		};
-	} catch {
-		/* fallback: fresh client instance */
-		try {
-			const userPb = new PocketBase(PB_URL);
-			userPb.authStore.save(token, null as never);
-			const auth = await userPb.collection('users').authRefresh();
-			const model = auth.record as { id?: string; role?: string };
-			if (!model?.id) return null;
-			return {
-				id: model.id,
-				role: String(model.role || 'patient'),
-				token
-			};
-		} catch {
-			return null;
-		}
-	}
+	const resolved = await resolveUserFromAuthToken(token);
+	if (!resolved) return null;
+
+	return {
+		id: resolved.id,
+		role: resolved.role,
+		token: resolved.token
+	};
 }
 
 export function canManageAppointments(role: string): boolean {

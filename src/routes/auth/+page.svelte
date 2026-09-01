@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { page } from '$app/stores';
 	import { pb } from '$lib/pocketbase';
 	import {
 		getUser,
@@ -13,6 +14,7 @@
 	} from '$lib/auth.svelte';
 	import OTPInput from '$lib/components/ui/otp-input.svelte';
 	import StatefulButton from '$lib/components/ui/stateful-button.svelte';
+	import { OTP_CODE_LENGTH, OTP_RESEND_SECONDS, normalizeOtpCode } from '$lib/otp';
 	import { cn } from '$lib/utils';
 	import { X } from '@lucide/svelte';
 
@@ -32,15 +34,26 @@
 	let storedMobile = $state('');
 	let detectedRole = $state<UserRole | null>(null);
 	let detectedName = $state('');
+	let otpSentAt = $state<number | null>(null);
+	let resendTick = $state(Date.now());
+	let resendingOtp = $state(false);
+	/** Shown only in dev/Sandbox when SMS does not reach the phone. */
+	let otpDisplayCode = $state<string | undefined>();
+	let verifyingOtp = $state(false);
 
 	const MOBILE_REGEX = /^09\d{9}$/;
 
 	let user = $derived(getUser());
 	let hydrated = $derived(isAuthHydrated());
+	let postLoginPath = $derived.by(() => {
+		const redirect = $page.url.searchParams.get('redirect');
+		if (redirect?.startsWith('/dashboard')) return redirect;
+		return '/dashboard';
+	});
 
 	$effect(() => {
-		if (!browser || !hydrated) return;
-		if (user) goto('/dashboard');
+		if (!browser || !hydrated || !user) return;
+		void goto(postLoginPath, { invalidateAll: true });
 	});
 
 	function normalizeMobile(value: string) {
@@ -100,6 +113,8 @@
 		detectedRole = null;
 		detectedName = '';
 		otpError = false;
+		otpSentAt = null;
+		otpDisplayCode = undefined;
 	}
 
 	function openSignIn() {
@@ -116,6 +131,41 @@
 		resetOtpFlow();
 	}
 
+	$effect(() => {
+		if (otpStep !== 2 || !otpSentAt) return;
+		const id = setInterval(() => {
+			resendTick = Date.now();
+		}, 1000);
+		return () => clearInterval(id);
+	});
+
+	const otpResendRemaining = $derived.by(() => {
+		if (!otpSentAt) return OTP_RESEND_SECONDS;
+		const elapsed = Math.floor((resendTick - otpSentAt) / 1000);
+		return Math.max(0, OTP_RESEND_SECONDS - elapsed);
+	});
+
+	const canResendOtp = $derived(otpStep === 2 && otpResendRemaining === 0 && !resendingOtp);
+
+	const otpResendProgress = $derived.by(() => {
+		if (!otpSentAt) return 0;
+		const elapsed = resendTick - otpSentAt;
+		return Math.min(100, (elapsed / (OTP_RESEND_SECONDS * 1000)) * 100);
+	});
+
+	async function requestOtpCode(mobileValue: string) {
+		const otpMode = recoveryMode ? 'recovery' : 'login';
+		const result = await requestLoginOtp(mobileValue, otpMode);
+		detectedRole = result.role || null;
+		detectedName = result.name || '';
+		storedMobile = mobileValue;
+		otpStep = 2;
+		otp = '';
+		otpError = false;
+		otpSentAt = Date.now();
+		otpDisplayCode = result.demoCode;
+	}
+
 	async function sendOTP() {
 		error = '';
 		detectedRole = null;
@@ -130,14 +180,7 @@
 				throw new Error('offline');
 			}
 
-			const otpMode = recoveryMode ? 'recovery' : 'login';
-			const result = await requestLoginOtp(cleanMobile, otpMode);
-			detectedRole = result.role || null;
-			detectedName = result.name || '';
-			storedMobile = cleanMobile;
-			otpStep = 2;
-			otp = '';
-			otpError = false;
+			await requestOtpCode(cleanMobile);
 		} catch (err: unknown) {
 			if (err instanceof Error && ['validation', 'offline'].includes(err.message)) throw err;
 			error = pbErrorMessage(err, 'ارسال کد ناموفق بود');
@@ -145,43 +188,71 @@
 		}
 	}
 
-	async function verifyOTP() {
-		if (otp.length !== 4) {
-			error = 'کد ۴ رقمی را کامل وارد کنید';
+	async function resendOTP() {
+		if (!storedMobile || !canResendOtp) return;
+		error = '';
+		resendingOtp = true;
+		try {
+			const connected = await checkConnection();
+			if (!connected) {
+				error = 'اتصال به سرور برقرار نیست.';
+				throw new Error('offline');
+			}
+			await requestOtpCode(storedMobile);
+		} catch (err: unknown) {
+			if (err instanceof Error && err.message === 'offline') throw err;
+			const e = err as Error & { resendAfterSeconds?: number };
+			if (e.resendAfterSeconds && otpSentAt) {
+				otpSentAt = Date.now() - (OTP_RESEND_SECONDS - e.resendAfterSeconds) * 1000;
+			}
+			error = pbErrorMessage(err, 'ارسال مجدد ناموفق بود');
+		} finally {
+			resendingOtp = false;
+		}
+	}
+
+	async function verifyOTP(submittedCode?: string): Promise<boolean> {
+		if (verifyingOtp || isLoading) return false;
+
+		const normalizedOtp = normalizeOtpCode(submittedCode ?? otp);
+		if (normalizedOtp.length !== OTP_CODE_LENGTH) {
+			error = `کد ${OTP_CODE_LENGTH.toLocaleString('fa-IR')} رقمی را کامل وارد کنید`;
 			otpError = true;
-			throw new Error('validation');
+			return false;
 		}
 
+		verifyingOtp = true;
 		isLoading = true;
 		error = '';
 		otpError = false;
 
 		try {
 			const cleanMobile = storedMobile || validateMobile(mobile);
-			if (!cleanMobile) throw new Error('validation');
+			if (!cleanMobile) return false;
 
 			const connected = await checkConnection();
 			if (!connected) {
 				error = 'اتصال به سرور برقرار نیست.';
 				otpError = true;
-				throw new Error('offline');
+				return false;
 			}
 
 			const resolved = detectedRole
 				? { role: detectedRole, name: detectedName }
 				: await resolveRoleForMobile(cleanMobile);
 
-			await verifyLoginOtp(cleanMobile, otp, {
+			await verifyLoginOtp(cleanMobile, normalizedOtp, {
 				role: resolved.role,
 				name: resolved.name
 			});
-			await goto('/dashboard');
+			await goto(postLoginPath, { invalidateAll: true });
+			return true;
 		} catch (err: unknown) {
-			if (err instanceof Error && ['validation', 'offline'].includes(err.message)) throw err;
 			error = pbErrorMessage(err, 'خطا در ورود. دوباره تلاش کنید.');
 			otpError = true;
-			throw err;
+			return false;
 		} finally {
+			verifyingOtp = false;
 			isLoading = false;
 		}
 	}
@@ -383,10 +454,24 @@
 				</form>
 			{:else}
 				<div class="flex w-full max-w-sm flex-col items-center">
-					<h2 class="text-3xl font-semibold leading-tight tracking-tight text-foreground">تأیید OTP</h2>
+					<h2 class="text-3xl font-semibold leading-tight tracking-tight text-foreground">
+						تایید شماره موبایل
+					</h2>
 					<p class="my-3 text-xs text-muted-foreground">
 						کد به <span dir="ltr">{storedMobile}</span> ارسال شد
 					</p>
+
+					{#if otpDisplayCode}
+						<p class="mb-3 text-center text-sm text-muted-foreground">
+							کد تأیید:
+							<span
+								dir="ltr"
+								class="mr-1 inline-block font-semibold tracking-[0.35em] text-foreground tabular-nums"
+							>
+								{otpDisplayCode}
+							</span>
+						</p>
+					{/if}
 
 					{#if detectedRole}
 						<div class="mb-3 rounded-xl bg-accent/70 px-3 py-2 text-center text-xs text-accent-foreground">
@@ -399,13 +484,14 @@
 
 					<div class="py-2" dir="ltr">
 						<OTPInput
-							length={4}
+							length={OTP_CODE_LENGTH}
 							onComplete={(value) => {
-								otp = value;
-								if (!isLoading) verifyOTP();
+								const code = normalizeOtpCode(value);
+								otp = code;
+								if (code.length === OTP_CODE_LENGTH) void verifyOTP(code);
 							}}
 							onValueChange={(value) => {
-								otp = value;
+								otp = normalizeOtpCode(value);
 								otpError = false;
 								error = '';
 							}}
@@ -418,6 +504,39 @@
 						<p class="mt-2 text-center text-xs text-destructive" role="alert">{error}</p>
 					{/if}
 
+					<div class="mt-4 w-full space-y-2">
+						<div class="flex items-center justify-between gap-3 text-xs">
+							<span class="text-muted-foreground">کد را دریافت نکردید؟</span>
+							{#if canResendOtp}
+								<button
+									type="button"
+									class="shrink-0 font-semibold text-primary transition-colors duration-200 hover:text-primary/80 disabled:opacity-50"
+									disabled={resendingOtp}
+									onclick={resendOTP}
+								>
+									{resendingOtp ? 'در حال ارسال...' : 'ارسال مجدد کد'}
+								</button>
+							{:else}
+								<span class="shrink-0 tabular-nums text-muted-foreground">
+									{otpResendRemaining.toLocaleString('fa-IR')} ثانیه
+								</span>
+							{/if}
+						</div>
+						<div
+							class="h-1 w-full overflow-hidden rounded-full bg-muted"
+							role="progressbar"
+							aria-valuemin={0}
+							aria-valuemax={100}
+							aria-valuenow={Math.round(otpResendProgress)}
+							aria-label="زمان تا ارسال مجدد کد"
+						>
+							<div
+								class="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+								style={`width: ${otpResendProgress}%`}
+							></div>
+						</div>
+					</div>
+
 					<div class="mt-2 flex w-full gap-2">
 						<button
 							type="button"
@@ -429,8 +548,11 @@
 						</button>
 						<StatefulButton
 							class="flex-1 !px-3"
-							disabled={isLoading || otp.length !== 4}
-							onclick={verifyOTP}
+							disabled={isLoading || normalizeOtpCode(otp).length !== OTP_CODE_LENGTH}
+							onclick={async () => {
+								const ok = await verifyOTP();
+								if (!ok) throw new Error('verify failed');
+							}}
 						>
 							تأیید و ورود
 						</StatefulButton>

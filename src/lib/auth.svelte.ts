@@ -57,7 +57,8 @@ async function syncSessionCookie() {
 	try {
 		await fetch('/api/auth/session', {
 			method: 'POST',
-			headers: { Authorization: `Bearer ${pb.authStore.token}` }
+			headers: { Authorization: `Bearer ${pb.authStore.token}` },
+			credentials: 'include'
 		});
 	} catch {
 		/* offline — SSR guard may redirect until next sync */
@@ -169,15 +170,20 @@ function saveAuthFromApi(data: { token?: string; record?: AuthUser; error?: stri
 	}
 	pb.authStore.save(data.token, data.record as never);
 	currentUser = enrichUser(data.record);
-	void syncSessionCookie();
 	return currentUser;
+}
+
+async function saveAuthFromApiAndSync(data: { token?: string; record?: AuthUser; error?: string }) {
+	const user = saveAuthFromApi(data);
+	await syncSessionCookie();
+	return user;
 }
 
 /** Request OTP for login or recovery. */
 export async function requestLoginOtp(
 	mobile: string,
 	mode: 'login' | 'recovery' = 'login'
-): Promise<{ role?: UserRole; name?: string; demoCode?: string }> {
+): Promise<{ role?: UserRole; name?: string; demoCode?: string; smsSandbox?: boolean; resendAfterSeconds?: number }> {
 	const res = await fetch('/api/auth/otp/request', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -188,9 +194,17 @@ export async function requestLoginOtp(
 		role?: UserRole;
 		name?: string;
 		demoCode?: string;
+		smsSandbox?: boolean;
+		resendAfterSeconds?: number;
 	};
-	if (!res.ok) throw new Error(data.error || 'ارسال کد ناموفق بود');
-	return { role: data.role, name: data.name, demoCode: data.demoCode };
+	if (!res.ok) {
+		const err = new Error(data.error || 'ارسال کد ناموفق بود') as Error & {
+			resendAfterSeconds?: number;
+		};
+		err.resendAfterSeconds = data.resendAfterSeconds;
+		throw err;
+	}
+	return { role: data.role, name: data.name, demoCode: data.demoCode, smsSandbox: data.smsSandbox };
 }
 
 /** Verify OTP and complete login/signup/recovery. */
@@ -202,11 +216,12 @@ export async function verifyLoginOtp(
 	const res = await fetch('/api/auth/otp/verify', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
 		body: JSON.stringify({ mobile, code, role: opts?.role, name: opts?.name })
 	});
 	const data = (await res.json()) as { token?: string; record?: AuthUser; error?: string };
 	if (!res.ok) throw new Error(data.error || 'تأیید کد ناموفق بود');
-	return saveAuthFromApi(data);
+	return saveAuthFromApiAndSync(data);
 }
 
 /** Login with username (or email) + password. */
@@ -214,11 +229,12 @@ export async function loginWithCredentials(username: string, password: string): 
 	const res = await fetch('/api/auth/login', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
 		body: JSON.stringify({ username, password })
 	});
 	const data = (await res.json()) as { token?: string; record?: AuthUser; error?: string };
 	if (!res.ok) throw new Error(data.error || 'ورود ناموفق بود');
-	return saveAuthFromApi(data);
+	return saveAuthFromApiAndSync(data);
 }
 
 /** Provision user via server (admin/secretary only). */

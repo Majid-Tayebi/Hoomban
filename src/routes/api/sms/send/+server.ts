@@ -3,15 +3,13 @@ import type { RequestHandler } from './$types';
 import { getAuthUserFromRequest } from '$lib/server/request-auth';
 import { getAdminPb } from '$lib/server/pocketbase';
 import { renderSmsBody, type SmsTemplate } from '$lib/sms';
+import { queueSms } from '$lib/server/sms/queue-sms';
+import { isSmsDispatchAllowed, isSmsirConfigured } from '$lib/server/sms/smsir-config';
 
 function canSendSms(role: string): boolean {
 	return role === 'admin' || role === 'secretary';
 }
 
-/**
- * Queues SMS into sms_outbox. Provider integration is stubbed:
- * status = "stub" until Kavenegar (or similar) is configured.
- */
 export const POST: RequestHandler = async ({ request }) => {
 	const actor = await getAuthUserFromRequest(request);
 	if (!actor) {
@@ -41,20 +39,20 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const pb = await getAdminPb();
-
-		const record = await pb.collection('sms_outbox').create({
-			to: to.startsWith('0') ? to : `0${to}`,
+		const result = await queueSms(pb, {
+			to,
 			template: template || 'custom',
 			payload,
-			body: text,
-			status: 'stub',
-			error: ''
+			body: text
 		});
 
 		return json({
-			ok: true,
-			status: 'stub',
-			id: record.id
+			ok: result.status === 'sent' || result.status === 'queued' || result.status === 'stub',
+			status: result.status,
+			id: result.id,
+			error: result.error,
+			configured: isSmsirConfigured(),
+			dispatchAllowed: isSmsDispatchAllowed()
 		});
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : 'خطا در صف پیامک';

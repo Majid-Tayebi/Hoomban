@@ -4,6 +4,7 @@
 	import Button from '$lib/components/ui/button.svelte';
 	import Dialog from '$lib/components/ui/dialog.svelte';
 	import OTPInput from '$lib/components/ui/otp-input.svelte';
+	import { OTP_CODE_LENGTH } from '$lib/otp';
 	import { cn } from '$lib/utils';
 
 	let {
@@ -65,7 +66,7 @@
 	async function confirmOtp() {
 		error = '';
 		message = '';
-		if (otp.length < 4) {
+		if (otp.length < OTP_CODE_LENGTH) {
 			error = 'کد تأیید را کامل وارد کنید';
 			return;
 		}
@@ -120,7 +121,7 @@
 		{:else}
 			<div class="flex justify-center py-1">
 				<OTPInput
-					length={4}
+					length={OTP_CODE_LENGTH}
 					disabled={loading}
 					error={Boolean(error)}
 					class="justify-center"
@@ -141,7 +142,7 @@
 				>
 					بازگشت
 				</Button>
-				<Button class="flex-1 rounded-xl" onclick={confirmOtp} disabled={loading || otp.length < 4}>
+				<Button class="flex-1 rounded-xl" onclick={confirmOtp} disabled={loading || otp.length < OTP_CODE_LENGTH}>
 					{loading ? 'در حال تأیید...' : 'تأیید و ذخیره'}
 				</Button>
 			</div>

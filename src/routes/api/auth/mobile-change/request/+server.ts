@@ -1,33 +1,23 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import PocketBase from 'pocketbase';
-import { env } from '$env/dynamic/private';
+import { getAuthUserFromRequest } from '$lib/server/request-auth';
 import { getAdminPb } from '$lib/server/pocketbase';
 import { createMobileChangeOtp } from '$lib/server/mobile-change-otp';
-import { maybeDemoCode } from '$lib/server/dev-auth';
+import { maybeExposeOtpForClient, isSmsSandboxMode } from '$lib/server/sms/smsir-otp-hint';
 import { assertMobileAvailable, normalizeMobile } from '$lib/server/user-uniqueness';
-
-const PB_URL = env.POCKETBASE_URL || 'http://127.0.0.1:8090';
-
-async function authActor(token: string) {
-	const userPb = new PocketBase(PB_URL);
-	userPb.authStore.save(token, null as never);
-	const refreshed = await userPb.collection('users').authRefresh();
-	return refreshed.record as { id: string; role?: string; mobile?: string };
-}
+import { queueSms } from '$lib/server/sms/queue-sms';
+import { OTP_RESEND_SECONDS } from '$lib/otp';
+import { enforceAuthRateLimit, rateLimitErrorMessage } from '$lib/server/rate-limit';
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body = await request.json();
 		const newMobile = normalizeMobile(String(body.newMobile ?? ''));
 		const targetUserId = String(body.targetUserId ?? '');
-		const authHeader = request.headers.get('authorization') || '';
-		const token =
-			(authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '') || String(body.token ?? '');
 
-		if (!token) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
+		const actor = await getAuthUserFromRequest(request);
+		if (!actor) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 
-		const actor = await authActor(token);
 		const targetId = targetUserId || actor.id;
 		const isSelf = targetId === actor.id;
 
@@ -35,6 +25,19 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json(
 				{ error: 'تغییر شماره موبایل دیگران فقط توسط مدیر کلینیک امکان‌پذیر است' },
 				{ status: 403 }
+			);
+		}
+
+		const rateLimit = await enforceAuthRateLimit(request, {
+			endpoint: 'mobile-change-request',
+			mobile: newMobile,
+			ipLimit: 15,
+			mobileLimit: 5
+		});
+		if (!rateLimit.ok) {
+			return json(
+				{ error: rateLimitErrorMessage(rateLimit), retryAfterSeconds: rateLimit.retryAfterSeconds },
+				{ status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } }
 			);
 		}
 
@@ -58,26 +61,44 @@ export const POST: RequestHandler = async ({ request }) => {
 			}
 		}
 
-		const otpRow = createMobileChangeOtp(targetId, newMobile, actor.id);
+		let otpRow;
+		try {
+			otpRow = await createMobileChangeOtp(pb, targetId, newMobile, actor.id);
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : '';
+			if (message.startsWith('RESEND_COOLDOWN:')) {
+				const waitSeconds = Number(message.split(':')[1] || OTP_RESEND_SECONDS);
+				return json(
+					{
+						error: `لطفاً ${waitSeconds.toLocaleString('fa-IR')} ثانیه دیگر برای ارسال مجدد صبر کنید`,
+						resendAfterSeconds: waitSeconds
+					},
+					{ status: 429 }
+				);
+			}
+			throw err;
+		}
 
 		try {
-			await pb.collection('sms_outbox').create({
+			await queueSms(pb, {
 				to: newMobile,
 				template: 'otp_mobile_change',
 				body: `کد تأیید تغییر شماره موبایل هومبان: ${otpRow.code}`,
-				status: 'stub',
-				payload: { targetUserId: targetId }
+				payload: { targetUserId: targetId, code: otpRow.code }
 			});
 		} catch {
 			/* optional */
 		}
 
-		const demoCode = maybeDemoCode(otpRow.code);
+		const exposedCode = maybeExposeOtpForClient(otpRow.code);
 
 		return json({
 			ok: true,
-			message: 'کد تأیید به شماره جدید ارسال شد',
-			...(demoCode ? { demoCode } : {}),
+			message: isSmsSandboxMode()
+				? 'درخواست OTP ثبت شد (Sandbox — پیامک واقعی ارسال نمی‌شود)'
+				: 'کد تأیید به شماره جدید ارسال شد',
+			...(exposedCode ? { demoCode: exposedCode } : {}),
+			smsSandbox: isSmsSandboxMode(),
 			targetUserId: targetId,
 			newMobile
 		});

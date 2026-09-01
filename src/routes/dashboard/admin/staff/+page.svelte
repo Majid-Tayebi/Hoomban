@@ -8,6 +8,7 @@
 	import Dialog from '$lib/components/ui/dialog.svelte';
 	import Select from '$lib/components/ui/select.svelte';
 	import OTPInput from '$lib/components/ui/otp-input.svelte';
+	import { OTP_CODE_LENGTH } from '$lib/otp';
 	import StaffTeamCard from '$lib/staff/components/staff-team-card.svelte';
 	import { globalSearch } from '$lib/search.svelte';
 	import { Plus } from '@lucide/svelte';
@@ -333,7 +334,7 @@
 					کد ارسال‌شده به <span dir="ltr">{editing.mobile}</span> را وارد کنید
 				</p>
 				<OTPInput
-					length={4}
+					length={OTP_CODE_LENGTH}
 					onValueChange={(v) => (otpCode = v)}
 					onComplete={(v) => (otpCode = v)}
 					disabled={otpLoading}
@@ -358,7 +359,7 @@
 					<Button
 						class="flex-1 rounded-xl"
 						onclick={confirmOtpAndSave}
-						disabled={otpLoading || otpCode.length < 4}
+						disabled={otpLoading || otpCode.length < OTP_CODE_LENGTH}
 					>
 						تأیید و ذخیره
 					</Button>

@@ -55,7 +55,13 @@
 			payload: { doctor, date, time, patient: 'بیمار' }
 		});
 		message = result.ok
-			? `در صف ثبت شد (وضعیت: ${result.status}) — اتصال واقعی پیامک هنوز فعال نیست`
+			? result.status === 'sent'
+				? 'پیامک ارسال شد'
+				: result.status === 'queued'
+					? 'در صف — ارسال واقعی فقط روی localhost فعال است'
+					: result.status === 'stub'
+						? 'در صف ثبت شد — SMS.ir پیکربندی نشده'
+						: `وضعیت: ${result.status}${result.error ? ` — ${result.error}` : ''}`
 			: result.error || 'خطا';
 		await loadOutbox();
 	}
@@ -69,9 +75,11 @@
 	<div class="space-y-4">
 		<Card class="rounded-2xl shadow-sm">
 			<CardHeader>
-				<CardTitle class="text-base">سامانه پیامک (اسکلت)</CardTitle>
+				<CardTitle class="text-base">سامانه پیامک (SMS.ir)</CardTitle>
 				<CardDescription>
-					پیام‌ها در sms_outbox ذخیره می‌شوند. اتصال Kavenegar بعداً اضافه می‌شود.
+					OTP از Verify (قالب Sandbox: 123456) ارسال می‌شود. پیامک‌های نوبت (تأیید، یادآوری، …) از
+					Bulk استفاده می‌کنند و به <code class="text-xs">SMSIR_LINE_NUMBER</code> نیاز دارند. در
+					Sandbox بدون خط، متن در outbox ثبت می‌شود و API واقعی Bulk فراخوانی نمی‌شود.
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-3">
@@ -84,6 +92,7 @@
 					<Select bind:value={template}>
 						<option value="appointment_confirmed">تأیید نوبت</option>
 						<option value="appointment_reminder">یادآوری</option>
+						<option value="appointment_rescheduled">تغییر زمان نوبت</option>
 						<option value="appointment_cancelled">لغو نوبت</option>
 						<option value="doctor_new_appointment">اطلاع به روانشناس</option>
 					</Select>

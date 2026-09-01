@@ -1,8 +1,8 @@
 import type PocketBase from 'pocketbase';
-import { formatFaDateTime, formatFaTime } from '$lib/date';
+import { formatFaDateTime } from '$lib/date';
 import { PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
 import { createNotificationsForUsers } from '$lib/server/notifications/create';
-import { queueSms } from '$lib/server/sms/queue-sms';
+import { queueAppointmentDoctorSms, queueAppointmentPatientSms } from '$lib/server/sms/appointment-sms';
 
 const REMINDER_KIND = 'reminder_24h';
 const REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -10,7 +10,7 @@ const REMINDER_TOLERANCE_MS = 2 * 60 * 60 * 1000;
 
 type AppointmentExpand = {
 	patient?: { id?: string; mobile?: string; name?: string };
-	doctor?: { display_name?: string; expand?: { user?: { id?: string } } };
+	doctor?: { display_name?: string; expand?: { user?: { id?: string; mobile?: string } } };
 };
 
 async function staffUserIds(pb: PocketBase): Promise<string[]> {
@@ -70,47 +70,65 @@ export async function runAppointmentReminders(pb: PocketBase): Promise<ReminderR
 	for (const apt of appointments) {
 		const exp = (apt.expand ?? {}) as AppointmentExpand;
 		const when = formatFaDateTime(new Date(String(apt.date_time)));
-		const timeLabel = formatFaTime(new Date(String(apt.date_time)));
 		const doctorName = String(exp.doctor?.display_name || 'متخصص');
 		const patientUserId = exp.patient?.id ? String(exp.patient.id) : null;
 		const patientMobile = exp.patient?.mobile ? String(exp.patient.mobile) : '';
+		const patientName = exp.patient?.name ? String(exp.patient.name) : '';
 		const doctorUserId = exp.doctor?.expand?.user?.id ? String(exp.doctor.expand.user.id) : null;
+		const doctorMobile = exp.doctor?.expand?.user?.mobile ? String(exp.doctor.expand.user.mobile) : '';
 
 		const metadata = { appointmentId: apt.id, kind: REMINDER_KIND };
+		const patientReminderSent = patientUserId
+			? await reminderAlreadySent(pb, patientUserId, apt.id)
+			: true;
+		const doctorReminderSent = doctorUserId
+			? await reminderAlreadySent(pb, doctorUserId, apt.id)
+			: true;
 
-		if (patientUserId) {
-			if (await reminderAlreadySent(pb, patientUserId, apt.id)) {
-				skipped += 1;
-			} else {
-				await createNotificationsForUsers(pb, [patientUserId], {
-					type: 'system',
-					title: 'یادآوری نوبت',
-					body: `فردا نوبت شما ساعت ${timeLabel} است.`,
-					href: '/dashboard/appointments',
-					metadata
-				});
-				if (patientMobile) {
-					await queueSms(pb, {
-						to: patientMobile,
-						template: 'appointment_reminder',
-						payload: { time: timeLabel, doctor: doctorName }
-					});
-				}
-				sent += 1;
-			}
+		if (patientUserId && patientReminderSent && doctorUserId && doctorReminderSent) {
+			skipped += 1;
+			continue;
 		}
 
-		if (doctorUserId && !(await reminderAlreadySent(pb, doctorUserId, apt.id))) {
-			await createNotificationsForUsers(pb, [doctorUserId], {
+		if (patientUserId && !patientReminderSent) {
+			await createNotificationsForUsers(pb, [patientUserId], {
 				type: 'system',
 				title: 'یادآوری نوبت',
-				body: `فردا جلسه‌ای در ${when} دارید.`,
+				body: `یادآوری: نوبت شما ${when} است.`,
 				href: '/dashboard/appointments',
 				metadata
 			});
+			if (patientMobile) {
+				await queueAppointmentPatientSms(pb, {
+					mobile: patientMobile,
+					template: 'appointment_reminder',
+					dateTime: String(apt.date_time),
+					doctorName,
+					patientName
+				});
+			}
 			sent += 1;
 		}
 
+		if (doctorUserId && !doctorReminderSent) {
+			await createNotificationsForUsers(pb, [doctorUserId], {
+				type: 'system',
+				title: 'یادآوری نوبت',
+				body: `یادآوری: جلسه‌ای در ${when} دارید.`,
+				href: '/dashboard/appointments',
+				metadata
+			});
+			if (doctorMobile) {
+				await queueAppointmentDoctorSms(pb, {
+					mobile: doctorMobile,
+					template: 'doctor_appointment_reminder',
+					dateTime: String(apt.date_time),
+					doctorName,
+					patientName
+				});
+			}
+			sent += 1;
+		}
 		const staffIds = await staffUserIds(pb);
 		for (const staffId of staffIds) {
 			if (await reminderAlreadySent(pb, staffId, apt.id)) continue;

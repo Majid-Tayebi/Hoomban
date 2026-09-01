@@ -3,9 +3,13 @@ import { formatFaDateTime } from '$lib/date';
 import { PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
 import { createNotificationsForUsers } from '$lib/server/notifications/create';
 import type { NotificationType } from '$lib/notifications/types';
+import {
+	queueAppointmentBookingSms,
+	queueAppointmentRescheduleSms
+} from '$lib/server/sms/appointment-sms';
 
 type AppointmentExpand = {
-	patient?: { id?: string; name?: string };
+	patient?: { id?: string; name?: string; mobile?: string };
 	doctor?: { id?: string; user?: string; display_name?: string; expand?: { user?: { id?: string } } };
 };
 
@@ -103,6 +107,22 @@ async function notifyAppointmentEvent(
 			href,
 			metadata: { appointmentId }
 		});
+	}
+
+	if (type === 'appointment_created') {
+		try {
+			await queueAppointmentBookingSms(pb, apt);
+		} catch {
+			/* SMS is best-effort */
+		}
+	}
+
+	if (type === 'appointment_rescheduled') {
+		try {
+			await queueAppointmentRescheduleSms(pb, apt);
+		} catch {
+			/* SMS is best-effort */
+		}
 	}
 }
 
