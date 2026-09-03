@@ -2,16 +2,24 @@
 	import { ArrowRight } from '@lucide/svelte';
 	import BrandLogo from '$lib/components/brand-logo.svelte';
 	import LandingFaqSection from '$lib/components/ui/landing-faq-section.svelte';
+	import SeoHead from '$lib/components/seo-head.svelte';
 	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
+	import { LANDING_FAQ_ITEMS } from '$lib/landing/faq-items';
+	import { faqPageJsonLd, breadcrumbJsonLd } from '$lib/seo/schema';
 </script>
 
-<svelte:head>
-	<title>سوالات متداول | {HOOMBAN_BRAND_NAME}</title>
-	<meta
-		name="description"
-		content="پاسخ به پرسش‌های رایج درباره خدمات، نوبت‌دهی و حریم خصوصی — کلینیک هومبان اراک"
-	/>
-</svelte:head>
+<SeoHead
+	title={`سوالات متداول | ${HOOMBAN_BRAND_NAME}`}
+	description="پاسخ به پرسش‌های رایج درباره خدمات، نوبت‌دهی و حریم خصوصی — کلینیک هومبان اراک"
+	path="/faq"
+	jsonLd={[
+		faqPageJsonLd([...LANDING_FAQ_ITEMS]),
+		breadcrumbJsonLd([
+			{ name: 'خانه', path: '/' },
+			{ name: 'سوالات متداول', path: '/faq' }
+		])
+	]}
+/>
 
 <div class="min-h-dvh bg-white text-foreground dark:bg-background">
 	<header class="border-b border-border px-4 py-4 sm:px-6">

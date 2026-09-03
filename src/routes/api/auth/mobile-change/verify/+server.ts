@@ -15,14 +15,14 @@ function normalizeMobile(raw: string) {
 	return digits;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const body = await request.json();
 		const newMobile = normalizeMobile(String(body.newMobile ?? ''));
 		const code = normalizeOtpCode(String(body.code ?? ''));
 		const targetUserId = String(body.targetUserId ?? '');
 
-		const actor = await getAuthUserFromRequest(request);
+		const actor = await getAuthUserFromRequest(request, cookies);
 		if (!actor) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 		if (!MOBILE_REGEX.test(newMobile)) {
 			return json({ error: 'شماره موبایل نامعتبر است' }, { status: 400 });

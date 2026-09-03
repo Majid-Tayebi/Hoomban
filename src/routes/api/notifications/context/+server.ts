@@ -12,8 +12,8 @@ const STATUS_LABELS: Record<string, string> = {
 	pending: 'در انتظار'
 };
 
-export const GET: RequestHandler = async ({ request, url }) => {
-	const user = await getAuthUserFromRequest(request);
+export const GET: RequestHandler = async ({ request, url, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) {
 		return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 	}

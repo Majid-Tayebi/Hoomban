@@ -25,8 +25,8 @@ export type StartCheckoutPayload = {
 	dateTime: string;
 	type: 'in_person' | 'service';
 	notesPublic?: string;
-	serviceTitle?: string;
-	servicePriceToman?: number;
+	/** Required when type is `service` — server loads price/title from PocketBase. */
+	serviceId?: string;
 };
 
 export async function startAppointmentOnlineCheckout(

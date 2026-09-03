@@ -9,13 +9,13 @@ import { queueSms } from '$lib/server/sms/queue-sms';
 import { OTP_RESEND_SECONDS } from '$lib/otp';
 import { enforceAuthRateLimit, rateLimitErrorMessage } from '$lib/server/rate-limit';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const body = await request.json();
 		const newMobile = normalizeMobile(String(body.newMobile ?? ''));
 		const targetUserId = String(body.targetUserId ?? '');
 
-		const actor = await getAuthUserFromRequest(request);
+		const actor = await getAuthUserFromRequest(request, cookies);
 		if (!actor) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 
 		const targetId = targetUserId || actor.id;

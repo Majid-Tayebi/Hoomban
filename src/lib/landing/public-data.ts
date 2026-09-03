@@ -63,7 +63,7 @@ function mapLandingArticle(item: Record<string, unknown>): LandingArticle {
 	if (!authorName && typeof authorRel === 'string') authorName = '';
 	if (!authorName) authorName = 'تیم هومبان';
 
-	const excerpt = String(item.excerpt || item.content || '').trim();
+	const excerpt = String(item.excerpt || '').trim();
 	return {
 		id: String(item.id),
 		title: String(item.title || ''),
@@ -103,12 +103,10 @@ export function getLandingArticleCoverUrl(
 	article: Pick<LandingArticle, 'id' | 'cover' | 'coverSrc' | 'updated'>
 ): string | null {
 	if (article.coverSrc) return article.coverSrc;
-	if (!article.cover) return null;
-	const base = pb.files.getURL(
-		{ id: article.id, collectionName: 'articles' } as never,
-		article.cover
-	);
-	return article.updated ? `${base}?v=${encodeURIComponent(article.updated)}` : base;
+	if (!article.cover || !article.id) return null;
+	// Serve through app origin so crawlers/social cards don't hit PocketBase directly.
+	const version = article.updated ? `?v=${encodeURIComponent(article.updated)}` : '';
+	return `/api/public/article-cover/${article.id}${version}`;
 }
 
 export function resolveLandingArticles(articles: LandingArticle[]): LandingArticle[] {
@@ -121,7 +119,8 @@ export async function loadPublishedArticles(limit = 50): Promise<LandingArticle[
 		const result = await pb.collection('articles').getList(1, limit, {
 			filter: 'is_published = true',
 			sort: '-created',
-			expand: 'author'
+			expand: 'author',
+			fields: 'id,title,slug,excerpt,cover,updated,created,author,expand.author.name'
 		});
 		const mapped = result.items.map((item) =>
 			mapLandingArticle(item as unknown as Record<string, unknown>)
@@ -138,30 +137,32 @@ export async function loadLandingPublicData(): Promise<{
 	testimonials: LandingTestimonial[];
 	articles: LandingArticle[];
 }> {
-	const [doctorItems, servicesResult, testimonialsResult, articlesResult] = await Promise.all([
-		pb.collection('doctors').getFullList({
+	const [doctorsResult, servicesResult, testimonialsResult, articlesResult] = await Promise.all([
+		pb.collection('doctors').getList(1, 40, {
 			filter: 'is_active = true',
 			sort: 'sort_order',
 			expand: 'user'
 		}),
 		pb.collection('services').getList(1, 20, {
 			filter: 'is_active = true && price > 0',
-			sort: 'sort_order'
+			sort: 'sort_order',
+			fields: 'id,title,description,price,category,sort_order'
 		}),
-		pb.collection('testimonials').getList(1, 50, {
+		pb.collection('testimonials').getList(1, 24, {
 			filter: 'is_published = true',
 			sort: 'sort_order',
-			expand: 'doctor'
+			fields: 'id,author,source,body,rating,doctor,sort_order'
 		}),
 		pb.collection('articles').getList(1, 6, {
 			filter: 'is_published = true',
 			sort: '-created',
-			expand: 'author'
+			expand: 'author',
+			fields: 'id,title,slug,excerpt,cover,updated,created,author,expand.author.name'
 		})
 	]);
 
 	return {
-		doctors: doctorItems.map((item) =>
+		doctors: doctorsResult.items.map((item) =>
 			mapLandingDoctor(item as unknown as Record<string, unknown>)
 		),
 		services: servicesResult.items.map((item) => ({

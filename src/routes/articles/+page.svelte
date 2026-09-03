@@ -3,7 +3,9 @@
 	import BrandLogo from '$lib/components/brand-logo.svelte';
 	import LandingArticleCard from '$lib/landing/components/landing-article-card.svelte';
 	import type { LandingArticle } from '$lib/landing/public-data';
+	import SeoHead from '$lib/components/seo-head.svelte';
 	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
+	import { collectionPageJsonLd, breadcrumbJsonLd } from '$lib/seo/schema';
 
 	let {
 		data
@@ -12,15 +14,29 @@
 	} = $props();
 
 	const articles = $derived(data.articles);
+	const jsonLd = $derived([
+		collectionPageJsonLd({
+			name: `مجله سلامت روان | ${HOOMBAN_BRAND_NAME}`,
+			description: 'مقالات و نوشته‌های آموزشی درباره سلامت روان',
+			path: '/articles',
+			items: articles.slice(0, 20).map((a) => ({
+				name: a.title,
+				path: `/articles/${a.slug}`
+			}))
+		}),
+		breadcrumbJsonLd([
+			{ name: 'خانه', path: '/' },
+			{ name: 'مقالات', path: '/articles' }
+		])
+	]);
 </script>
 
-<svelte:head>
-	<title>مجله سلامت روان | {HOOMBAN_BRAND_NAME}</title>
-	<meta
-		name="description"
-		content="مقالات و نوشته‌های آموزشی درباره سلامت روان — کلینیک هومبان اراک"
-	/>
-</svelte:head>
+<SeoHead
+	title={`مجله سلامت روان | ${HOOMBAN_BRAND_NAME}`}
+	description="مقالات و نوشته‌های آموزشی درباره سلامت روان — کلینیک هومبان اراک"
+	path="/articles"
+	jsonLd={jsonLd}
+/>
 
 <div class="min-h-dvh bg-white text-foreground dark:bg-background">
 	<header class="border-b border-border px-4 py-4 sm:px-6">

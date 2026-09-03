@@ -202,13 +202,13 @@ async function fetchTodayAppointmentCounts(): Promise<Map<string, number>> {
 	const counts = new Map<string, number>();
 
 	try {
-		const items = await pb.collection('appointments').getFullList({
+		const items = await pb.collection('appointments').getList(1, 200, {
 			filter: `date_time >= "${dayStart.toISOString()}" && date_time < "${dayEnd.toISOString()}" && status != "cancelled"`,
 			fields: 'id,doctor',
 			...PB_NO_AUTO_CANCEL
 		});
 
-		for (const apt of items) {
+		for (const apt of items.items) {
 			const doctorId = String(apt.doctor || '');
 			if (!doctorId) continue;
 			counts.set(doctorId, (counts.get(doctorId) ?? 0) + 1);

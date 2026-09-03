@@ -10,8 +10,8 @@ function canSendSms(role: string): boolean {
 	return role === 'admin' || role === 'secretary';
 }
 
-export const POST: RequestHandler = async ({ request }) => {
-	const actor = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const actor = await getAuthUserFromRequest(request, cookies);
 	if (!actor) {
 		return json({ ok: false, status: 'failed', error: 'احراز هویت لازم است' }, { status: 401 });
 	}
@@ -24,9 +24,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		const to = String(body.to ?? '').replace(/\D/g, '');
 		const template = body.template as SmsTemplate;
 		const payload = (body.payload || {}) as Record<string, string | number>;
+		const freeText =
+			typeof body.body === 'string' && body.body.trim() ? body.body.trim().slice(0, 500) : '';
+		// Free-text SMS is admin-only — secretaries must use approved templates.
 		const text =
-			typeof body.body === 'string' && body.body
-				? body.body
+			freeText && actor.role === 'admin'
+				? freeText
 				: template
 					? renderSmsBody(template, payload)
 					: '';
@@ -34,8 +37,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (!to || to.length < 10) {
 			return json({ ok: false, status: 'failed', error: 'شماره نامعتبر' }, { status: 400 });
 		}
-		if (!template && !text) {
-			return json({ ok: false, status: 'failed', error: 'قالب یا متن لازم است' }, { status: 400 });
+		if (!text) {
+			return json(
+				{
+					ok: false,
+					status: 'failed',
+					error:
+						actor.role === 'admin'
+							? 'قالب یا متن لازم است'
+							: 'ارسال پیامک فقط با قالب تأییدشده مجاز است'
+				},
+				{ status: 400 }
+			);
 		}
 
 		const pb = await getAdminPb();

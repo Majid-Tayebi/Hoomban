@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types';
 import PocketBase from 'pocketbase';
 import { env } from '$env/dynamic/private';
 import { getAdminPb } from '$lib/server/pocketbase';
+import { getAuthUserFromRequest } from '$lib/server/request-auth';
+import { enforceAuthRateLimit, rateLimitErrorMessage } from '$lib/server/rate-limit';
 import {
 	assertMobileAvailable,
 	assertUsernameAvailable,
@@ -24,15 +26,29 @@ async function authUserId(token: string): Promise<string | null> {
 	}
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
+		const rateLimit = await enforceAuthRateLimit(request, {
+			endpoint: 'profile-check-unique',
+			ipLimit: 30
+		});
+		if (!rateLimit.ok) {
+			return json({ error: rateLimitErrorMessage(rateLimit) }, { status: 429 });
+		}
+
+		const authUser = await getAuthUserFromRequest(request, cookies);
 		const body = await request.json();
 		const field = String(body.field ?? '');
 		const authHeader = request.headers.get('authorization') || '';
 		const token =
 			(authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '') || String(body.token ?? '');
-		const excludeUserId =
-			String(body.excludeUserId ?? '') || (await authUserId(token)) || undefined;
+
+		const resolvedUserId = authUser?.id || (token ? await authUserId(token) : null);
+		if (!resolvedUserId) {
+			return json({ error: 'احراز هویت لازم است' }, { status: 401 });
+		}
+
+		const excludeUserId = String(body.excludeUserId ?? '') || resolvedUserId;
 
 		if (field === 'mobile') {
 			const mobile = normalizeMobile(String(body.value ?? body.mobile ?? ''));

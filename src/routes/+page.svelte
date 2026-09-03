@@ -12,6 +12,8 @@
 		LandingService,
 		LandingTestimonial
 	} from '$lib/landing/public-data';
+	import SeoHead from '$lib/components/seo-head.svelte';
+	import { localBusinessJsonLd, websiteJsonLd } from '$lib/seo/schema';
 	import type { Component } from 'svelte';
 
 	let {
@@ -76,6 +78,8 @@
 		if (data.doctors.length > 0) loadDoctorsShowcase();
 	});
 </script>
+
+<SeoHead path="/" jsonLd={[localBusinessJsonLd(), websiteJsonLd()]} />
 
 <div class="min-h-dvh bg-white text-foreground dark:bg-background">
 	<LandingHeroBanner

@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import { getAuthUserFromRequest } from '$lib/server/request-auth';
 import { getAdminPb } from '$lib/server/pocketbase';
 
-export const POST: RequestHandler = async ({ request, params }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, params, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 
 	try {

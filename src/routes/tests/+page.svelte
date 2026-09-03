@@ -11,6 +11,8 @@
 	import CardContent from '$lib/components/ui/card-content.svelte';
 	import Badge from '$lib/components/ui/badge.svelte';
 	import { FileText, Play } from '@lucide/svelte';
+	import SeoHead from '$lib/components/seo-head.svelte';
+	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
 
 	let { data } = $props();
 
@@ -40,15 +42,7 @@
 		goto(target);
 	}
 
-	function getCategoryLabel(category: string) {
-		const labels: Record<string, string> = {
-			personality: 'شخصیتی',
-			depression: 'افسردگی',
-			marriage: 'ازدواج',
-			kids: 'کودکان'
-		};
-		return labels[category] || category;
-	}
+	import { psychCategoryLabel } from '$lib/psych/categories';
 
 	function resultForSlug(slug: string) {
 		return myResults.find((r) => r.testSlug === slug);
@@ -104,6 +98,12 @@
 	});
 </script>
 
+<SeoHead
+	title={`آزمون‌های روانشناسی | ${HOOMBAN_BRAND_NAME}`}
+	description="آزمون‌های شخصیت‌شناسی و روان‌شناختی آنلاین — کلینیک هومبان"
+	path="/tests"
+/>
+
 <div class="space-y-4 sm:space-y-6">
 	<div>
 		<h1 class="text-xl font-bold sm:text-2xl">تست‌های روانشناسی</h1>
@@ -158,7 +158,7 @@
 				<Card class="flex flex-col rounded-2xl shadow-sm">
 					<CardHeader class="px-4 pt-4 sm:px-6">
 						<div class="mb-2 flex flex-wrap items-center gap-2">
-							<Badge variant="secondary" class="text-[10px]">{getCategoryLabel(test.category)}</Badge>
+							<Badge variant="secondary" class="text-[10px]">{psychCategoryLabel(test.category)}</Badge>
 							{#if test.test_type === 'neo_240'}
 								<Badge class="text-[10px]">۲۴۰ سوال</Badge>
 							{/if}

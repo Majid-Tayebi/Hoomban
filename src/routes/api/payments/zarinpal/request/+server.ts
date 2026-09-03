@@ -10,8 +10,8 @@ import {
 import { ZarinpalError } from '$lib/server/payments/zarinpal';
 import { formatServiceNote } from '$lib/appointments/service-booking';
 
-export const POST: RequestHandler = async ({ request, url }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, url, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 	if (!canManageAppointments(user.role)) {
 		return json({ error: 'دسترسی ندارید' }, { status: 403 });
@@ -27,11 +27,13 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		const dateTime = String(body.dateTime ?? '');
 		const type = body.type === 'service' ? 'service' : 'in_person';
 		const notesPublic = body.notesPublic ? String(body.notesPublic) : '';
-		const serviceTitle = body.serviceTitle ? String(body.serviceTitle) : '';
-		const servicePriceToman = body.servicePriceToman != null ? Number(body.servicePriceToman) : 0;
+		const serviceId = body.serviceId ? String(body.serviceId).trim() : '';
 
 		if (!patientId || !doctorId || !dateTime) {
 			return json({ error: 'اطلاعات نوبت ناقص است' }, { status: 400 });
+		}
+		if (type === 'service' && !serviceId) {
+			return json({ error: 'شناسه خدمت الزامی است' }, { status: 400 });
 		}
 
 		if (user.role === 'patient' && patientId !== user.id) {
@@ -39,19 +41,20 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		}
 
 		const pb = await getAdminPb();
-		const amountToman = await resolveBookingAmountToman(pb, {
+		const resolved = await resolveBookingAmountToman(pb, {
 			doctorId,
 			type,
-			servicePriceToman
+			serviceId: serviceId || undefined
 		});
+		const amountToman = resolved.amountToman;
 
 		if (amountToman <= 0) {
 			return json({ error: 'مبلغ قابل پرداخت برای این نوبت تعریف نشده است' }, { status: 400 });
 		}
 
 		let title = 'پرداخت نوبت هومبان';
-		if (type === 'service' && serviceTitle) {
-			title = `پرداخت خدمت ${serviceTitle}`;
+		if (type === 'service' && resolved.serviceTitle) {
+			title = `پرداخت خدمت ${resolved.serviceTitle}`;
 		} else {
 			try {
 				const doctor = await pb.collection('doctors').getOne(doctorId);
@@ -79,8 +82,11 @@ export const POST: RequestHandler = async ({ request, url }) => {
 			type,
 			notesPublic:
 				notesPublic ||
-				(type === 'service' && serviceTitle
-					? formatServiceNote({ title: serviceTitle })
+				(type === 'service' && resolved.serviceTitle
+					? formatServiceNote({
+							title: resolved.serviceTitle,
+							category: resolved.serviceCategory
+						})
 					: undefined),
 			amountToman,
 			title,

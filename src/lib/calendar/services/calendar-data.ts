@@ -39,7 +39,7 @@ async function fetchAppointmentEvents(anchor: Date): Promise<ScheduleEvent[]> {
 
 	const filter = `date_time >= "${from.toISOString()}" && date_time < "${to.toISOString()}" && status != "cancelled"`;
 
-	const res = await pb.collection('appointments').getList(1, 200, {
+	const res = await pb.collection('appointments').getList(1, 300, {
 		filter,
 		expand: 'patient,doctor,doctor.user',
 		sort: 'date_time'
@@ -120,7 +120,7 @@ export async function loadCalendarPageData(
 	anchor: Date = new Date(),
 	opts: { includeMockServices?: boolean } = {}
 ): Promise<CalendarPageData> {
-	const includeMockServices = opts.includeMockServices ?? true;
+	const includeMockServices = opts.includeMockServices ?? false;
 	let appointmentEvents: ScheduleEvent[] = [];
 
 	try {

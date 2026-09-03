@@ -1,29 +1,25 @@
 import { getMemoryRateLimitStore } from './memory-store';
 import { getRedisRateLimitStore, isRedisConfigured } from './redis-store';
 import type { AuthRateLimitOptions, RateLimitResult, RateLimitStore } from './types';
+import { env } from '$env/dynamic/private';
+import { getClientIp } from '$lib/server/request-ip';
 
 export type { AuthRateLimitOptions, RateLimitResult } from './types';
 export { isRedisConfigured } from './redis-store';
+export { getClientIp } from '$lib/server/request-ip';
 
 async function getRateLimitStore(): Promise<RateLimitStore> {
 	if (isRedisConfigured()) {
 		const redisStore = await getRedisRateLimitStore();
 		if (redisStore) return redisStore;
+		if (env.NODE_ENV === 'production') {
+			throw new Error('Redis rate limit store is unavailable in production');
+		}
+	}
+	if (env.NODE_ENV === 'production') {
+		throw new Error('REDIS_URL is required in production for distributed rate limiting');
 	}
 	return getMemoryRateLimitStore();
-}
-
-export function getClientIp(request: Request): string {
-	const forwarded = request.headers.get('x-forwarded-for');
-	if (forwarded) {
-		const first = forwarded.split(',')[0]?.trim();
-		if (first) return first;
-	}
-	const realIp = request.headers.get('x-real-ip')?.trim();
-	if (realIp) return realIp;
-	const cfIp = request.headers.get('cf-connecting-ip')?.trim();
-	if (cfIp) return cfIp;
-	return 'local';
 }
 
 async function checkBucket(

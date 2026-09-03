@@ -1,18 +1,21 @@
-import { pb } from '$lib/pocketbase';
 import { loadLandingPublicData } from '$lib/landing/public-data';
 import { LANDING_ARTICLES_FALLBACK } from '$lib/landing/articles-fallback';
+import { getCachedJson, publicCacheHeaders } from '$lib/server/cache';
+import type { PageServerLoad } from './$types';
 
-export async function load() {
+const LANDING_CACHE_TTL = 120;
+
+export const load: PageServerLoad = async ({ setHeaders }) => {
+	setHeaders(publicCacheHeaders(LANDING_CACHE_TTL));
+
 	try {
-		await pb.health.check();
-		const { doctors, services, testimonials, articles } = await loadLandingPublicData();
+		const data = await getCachedJson('public:landing-home', LANDING_CACHE_TTL, () =>
+			loadLandingPublicData()
+		);
 		return {
 			connected: true,
 			message: 'اتصال به PocketBase برقرار شد!',
-			doctors,
-			services,
-			testimonials,
-			articles
+			...data
 		};
 	} catch {
 		return {
@@ -25,4 +28,4 @@ export async function load() {
 			articles: LANDING_ARTICLES_FALLBACK
 		};
 	}
-}
+};

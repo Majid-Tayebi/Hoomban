@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { registerServiceWorker } from '$lib/push/push-client';
+	import { hydrateAuthFromSession } from '$lib/auth.svelte';
 
 	let { children, data } = $props();
 
@@ -20,6 +21,11 @@
 		});
 	});
 
+	$effect(() => {
+		if (!browser) return;
+		void hydrateAuthFromSession();
+	});
+
 	/** Secondary client guard — primary enforcement is +layout.server.ts */
 	$effect(() => {
 		if (!hydrated || !user) return;
@@ -29,6 +35,6 @@
 	});
 </script>
 
-<AppShell>
+<AppShell fallbackUser={data.user}>
 	{@render children()}
 </AppShell>

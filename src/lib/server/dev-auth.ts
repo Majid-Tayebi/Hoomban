@@ -3,6 +3,7 @@ import { env } from '$env/dynamic/private';
 
 /** Demo OTP/password helpers are only active in dev or when explicitly enabled. */
 export function isDevAuthEnabled(): boolean {
+	if (env.NODE_ENV === 'production') return false;
 	return dev || env.DEV_DEMO_AUTH === 'true';
 }
 

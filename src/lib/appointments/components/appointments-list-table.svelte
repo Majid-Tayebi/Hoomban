@@ -4,7 +4,6 @@
 	import { getUser } from '$lib/auth.svelte';
 	import { canNavigateToPatientFromAppointment, canAccessSecretaryPatientDesk, getPatientRecordHref } from '$lib/rbac';
 	import type { AppointmentListItem } from '../types';
-	import { getStatusConfig } from '../services/appointments-data';
 	import {
 		cancelAppointment,
 		canCancelAppointmentStatus,
@@ -13,30 +12,25 @@
 		canPatientEditAppointment,
 		canRescheduleAppointmentStatus
 	} from '../services/appointment-actions';
-	import {
-		canPatientCancelByTime,
-		PATIENT_CANCEL_REFUND_NOTE,
-		PATIENT_CANCEL_TOO_LATE_MESSAGE
-	} from '../cancellation-policy';
+	import { canPatientCancelByTime } from '../cancellation-policy';
 	import {
 		isAppointmentInRange,
 		type AppointmentRangeFilter
 	} from '../appointment-range-filter';
+	import AppointmentCancelDialog from './appointment-cancel-dialog.svelte';
 	import AppointmentRescheduleDialog from './appointment-reschedule-dialog.svelte';
 	import AppointmentPatientEditDialog from './appointment-patient-edit-dialog.svelte';
+	import AppointmentsDesktopTable from './appointments-desktop-table.svelte';
+	import AppointmentsMobileList from './appointments-mobile-list.svelte';
 	import SecretarySmsDialog from '$lib/desk/components/secretary-sms-dialog.svelte';
 	import { formatFaDate, formatFaTime } from '$lib/date';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
 	import CardTitle from '$lib/components/ui/card-title.svelte';
 	import CardContent from '$lib/components/ui/card-content.svelte';
-	import Checkbox from '$lib/components/ui/checkbox.svelte';
 	import TablePagination from '$lib/components/ui/table-pagination.svelte';
 	import Button from '$lib/components/ui/button.svelte';
-	import Dialog from '$lib/components/ui/dialog.svelte';
-	import { DropdownMenu } from 'bits-ui';
-	import { LoaderCircle, MoreHorizontal, Plus, XCircle, CalendarClock, Pencil, MessageSquareText } from '@lucide/svelte';
-	import { cn } from '$lib/utils';
+	import { Plus } from '@lucide/svelte';
 
 	let {
 		appointments,
@@ -76,12 +70,12 @@
 	const canManage = $derived(canManageAppointmentActions(user?.role));
 	const canSendPatientSms = $derived(user?.role === 'admin' || user?.role === 'secretary');
 
-	function canSmsRow(apt: AppointmentListItem) {
-		return (
+	function canSmsRow(apt: AppointmentListItem): boolean {
+		return Boolean(
 			canSendPatientSms &&
-			apt.phone &&
-			apt.phone !== '—' &&
-			apt.phone.replace(/\D/g, '').length >= 10
+				apt.phone &&
+				apt.phone !== '—' &&
+				apt.phone.replace(/\D/g, '').length >= 10
 		);
 	}
 
@@ -155,6 +149,11 @@
 		confirmOpen = true;
 	}
 
+	function dismissCancel() {
+		confirmOpen = false;
+		cancelTarget = null;
+	}
+
 	async function confirmCancel() {
 		if (!cancelTarget) return;
 		cancelling = true;
@@ -176,11 +175,6 @@
 			? 'grid-cols-[minmax(9.5rem,1.2fr)_11.5rem_6.5rem_2.25rem]'
 			: 'grid-cols-[2.25rem_minmax(9.5rem,1.2fr)_11.5rem_minmax(8.5rem,1.05fr)_9.5rem_6.5rem_2.25rem]'
 	);
-
-	const phoneColumnClass = 'flex min-w-0 w-full justify-end pe-6 ps-4';
-	const phoneCellClass = `${phoneColumnClass} truncate text-sm tabular-nums text-muted-foreground`;
-	const patientCellClass = 'min-w-0 overflow-hidden';
-	const specialistCellClass = 'min-w-0 overflow-hidden pe-6';
 
 	const filteredAppointments = $derived.by(() =>
 		appointments.filter((apt) => isAppointmentInRange(apt.dateTime, rangeFilter))
@@ -222,10 +216,6 @@
 		toggleRowSelection(id, (event.currentTarget as HTMLInputElement).checked);
 	}
 
-	function rowSelectHandler(id: string) {
-		return (event: Event) => onRowSelectChange(id, event);
-	}
-
 	$effect(() => {
 		rangeFilter;
 		page = 1;
@@ -259,22 +249,6 @@
 		}, 5000);
 		return () => clearTimeout(timer);
 	});
-
-	function rowHighlightClass(id: string): string {
-		return highlightedId === id
-			? 'ring-2 ring-amber-400/70 bg-amber-50/60 dark:bg-amber-950/20'
-			: '';
-	}
-
-	function formatPhone(phone: string): string {
-		if (phone === '—') return phone;
-		return phone.replace(/(\d{4})(\d{3})(\d{4})/, '$1-$2-$3');
-	}
-
-	const menuItemClass =
-		'flex cursor-pointer select-none items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-none transition-all duration-200 ease-in-out data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive';
-	const menuItemRescheduleClass =
-		'flex cursor-pointer select-none items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-none transition-all duration-200 ease-in-out data-[highlighted]:bg-muted data-[highlighted]:text-foreground';
 </script>
 
 <Card class="overflow-hidden rounded-2xl border-border/60 shadow-sm">
@@ -315,385 +289,61 @@
 		{#if !loading && filteredAppointments.length === 0}
 			<p class="px-5 py-12 text-center text-sm text-muted-foreground">نوبتی در این بازه یافت نشد.</p>
 		{:else}
-			<div class="hidden overflow-x-auto md:block">
-				<div class={cn('min-w-[760px]', isPatientView && 'min-w-[520px]')}>
-					<div
-						class={cn(
-							'grid items-center gap-x-10 border-y border-border/40 bg-muted/30 px-4 py-2.5 text-[11px] font-medium text-muted-foreground sm:px-5',
-							gridClass
-						)}
-					>
-						{#if !isPatientView}
-							<span class="flex justify-center">
-								<Checkbox
-									checked={allVisibleSelected}
-									aria-label="انتخاب همه نوبت‌های این صفحه"
-									onchange={onSelectAllChange}
-								/>
-							</span>
-							<span class="min-w-0">مراجع</span>
-							<bdi class={phoneColumnClass} dir="ltr">تماس</bdi>
-						{/if}
-						<span class={specialistCellClass}>متخصص</span>
-						<span class="min-w-0">زمان</span>
-						<span class="min-w-0 text-center">وضعیت</span>
-						<span class="sr-only">عملیات</span>
-					</div>
+			<AppointmentsDesktopTable
+				appointments={paginated}
+				{isPatientView}
+				{gridClass}
+				{selectedIds}
+				{allVisibleSelected}
+				{clickablePatients}
+				{highlightedId}
+				bind:openMenuId
+				{onSelectAllChange}
+				{onRowSelectChange}
+				onOpenPatient={openPatient}
+				{canEditRow}
+				{canPatientCancelRow}
+				{canRescheduleRow}
+				{canCancelRow}
+				{canSmsRow}
+				onEdit={requestEdit}
+				onCancel={requestCancel}
+				onReschedule={requestReschedule}
+				onSms={requestSms}
+			/>
 
-					<ul class="divide-y divide-border/40">
-						{#each paginated as apt (apt.id)}
-							{@const status = getStatusConfig(apt.status)}
-							<li
-								id={`apt-row-${apt.id}`}
-								class={cn(
-									'grid items-center gap-x-10 px-4 py-3 transition-all duration-300 sm:px-5',
-									gridClass,
-									rowHighlightClass(apt.id),
-									!isPatientView && clickablePatients && apt.patientUserId
-										? 'cursor-pointer hover:bg-muted/30'
-										: ''
-								)}
-								role={!isPatientView && clickablePatients && apt.patientUserId ? 'button' : undefined}
-								onclick={() => !isPatientView && openPatient(apt.patientUserId)}
-								onkeydown={(e) => {
-									if (
-										!isPatientView &&
-										(e.key === 'Enter' || e.key === ' ') &&
-										apt.patientUserId
-									) {
-										e.preventDefault();
-										openPatient(apt.patientUserId);
-									}
-								}}
-							>
-								{#if !isPatientView}
-									<div class="flex justify-center" onclick={(e) => e.stopPropagation()}>
-										<Checkbox
-											checked={selectedIds.includes(apt.id)}
-											aria-label={`انتخاب نوبت ${apt.patientName}`}
-											onchange={rowSelectHandler(apt.id)}
-										/>
-									</div>
-
-									<div class={patientCellClass}>
-										<p class="truncate text-sm font-medium leading-snug">{apt.patientName}</p>
-										<bdi
-											class="mt-0.5 block w-full truncate text-end text-[11px] leading-snug tabular-nums text-muted-foreground"
-											dir="ltr"
-										>
-											{apt.patientId}
-										</bdi>
-									</div>
-
-									<bdi class={phoneCellClass} dir="ltr">
-										{formatPhone(apt.phone)}
-									</bdi>
-								{/if}
-
-								<div class={specialistCellClass}>
-									<p class="truncate text-sm font-medium leading-snug">{apt.doctorName}</p>
-									<p class="mt-0.5 truncate text-[11px] leading-snug text-muted-foreground">
-										{apt.specialty}
-									</p>
-								</div>
-
-								<div
-									class="min-w-0 overflow-hidden text-sm tabular-nums leading-snug text-muted-foreground"
-								>
-									<p class="truncate">{formatFaDate(apt.dateTime)}</p>
-									<p class="mt-0.5 truncate text-[11px]">{formatFaTime(apt.dateTime)}</p>
-								</div>
-
-								<div class="flex min-w-0 justify-center">
-									<span
-										class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium {status.class}"
-									>
-										{status.label}
-									</span>
-								</div>
-
-								<div class="flex justify-center" onclick={(e) => e.stopPropagation()}>
-									{#if canEditRow(apt) || canPatientCancelRow(apt)}
-										<div class="flex items-center gap-0.5">
-											{#if canEditRow(apt)}
-												<Button
-													variant="ghost"
-													size="sm"
-													class="h-8 rounded-lg px-2"
-													onclick={() => requestEdit(apt)}
-												>
-													<Pencil class="h-4 w-4" />
-													<span class="sr-only">ویرایش</span>
-												</Button>
-											{/if}
-											{#if canPatientCancelRow(apt)}
-												<Button
-													variant="ghost"
-													size="sm"
-													class="h-8 rounded-lg px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-													onclick={() => requestCancel(apt)}
-												>
-													<XCircle class="h-4 w-4" />
-													<span class="sr-only">لغو نوبت</span>
-												</Button>
-											{/if}
-										</div>
-									{:else if canRescheduleRow(apt) || canCancelRow(apt) || canSmsRow(apt)}
-										<DropdownMenu.Root
-											open={openMenuId === apt.id}
-											onOpenChange={(v) => {
-												openMenuId = v ? apt.id : null;
-											}}
-										>
-											<DropdownMenu.Trigger
-												class="rounded-lg p-1.5 transition-colors duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-												aria-label="عملیات نوبت"
-											>
-												<MoreHorizontal class="h-4 w-4 text-muted-foreground" />
-											</DropdownMenu.Trigger>
-											<DropdownMenu.Portal>
-												<DropdownMenu.Content
-													align="end"
-													sideOffset={6}
-													class="z-50 min-w-[10rem] overflow-hidden rounded-xl border border-border/70 bg-popover p-1 text-popover-foreground shadow-lg"
-												>
-													{#if canRescheduleRow(apt)}
-														<DropdownMenu.Item
-															class={menuItemRescheduleClass}
-															onSelect={() => requestReschedule(apt)}
-														>
-															<CalendarClock class="h-4 w-4" />
-															تغییر زمان
-														</DropdownMenu.Item>
-													{/if}
-													{#if canCancelRow(apt)}
-														<DropdownMenu.Item
-															class={menuItemClass}
-															onSelect={() => requestCancel(apt)}
-														>
-															<XCircle class="h-4 w-4" />
-															لغو نوبت
-														</DropdownMenu.Item>
-													{/if}
-													{#if canSmsRow(apt)}
-														<DropdownMenu.Item
-															class={menuItemClass}
-															onSelect={() => requestSms(apt)}
-														>
-															<MessageSquareText class="h-4 w-4" />
-															ارسال پیامک
-														</DropdownMenu.Item>
-													{/if}
-												</DropdownMenu.Content>
-											</DropdownMenu.Portal>
-										</DropdownMenu.Root>
-									{:else}
-										<span class="inline-block w-7" aria-hidden="true"></span>
-									{/if}
-								</div>
-							</li>
-						{/each}
-					</ul>
-				</div>
-			</div>
-
-			<div class="space-y-2 p-3 md:hidden">
-				{#each paginated as apt (apt.id)}
-					{@const status = getStatusConfig(apt.status)}
-					<div
-						id={`apt-row-${apt.id}`}
-						class={cn(
-							'rounded-xl border border-border/50 bg-card p-3 transition-all duration-300',
-							rowHighlightClass(apt.id)
-						)}
-					>
-						<div
-							class={cn(
-								!isPatientView && clickablePatients && apt.patientUserId
-									? 'cursor-pointer transition-colors duration-200 hover:opacity-90'
-									: ''
-							)}
-							role={!isPatientView && clickablePatients && apt.patientUserId ? 'button' : undefined}
-							onclick={() => !isPatientView && openPatient(apt.patientUserId)}
-							onkeydown={(e) => {
-								if (
-									!isPatientView &&
-									(e.key === 'Enter' || e.key === ' ') &&
-									apt.patientUserId
-								) {
-									e.preventDefault();
-									openPatient(apt.patientUserId);
-								}
-							}}
-						>
-							<div class="flex items-start justify-between gap-2">
-								<div class="min-w-0 overflow-hidden">
-									{#if isPatientView}
-										<p class="truncate text-sm font-medium">{apt.doctorName}</p>
-										<p class="mt-0.5 truncate text-xs text-muted-foreground">{apt.specialty}</p>
-									{:else}
-										<p class="truncate text-sm font-medium">{apt.patientName}</p>
-										<bdi
-											class="mt-0.5 block w-full truncate text-end text-[11px] tabular-nums text-muted-foreground"
-											dir="ltr"
-										>
-											{apt.patientId}
-										</bdi>
-										<bdi
-											class="mt-0.5 block w-full truncate text-end text-[11px] tabular-nums text-muted-foreground"
-											dir="ltr"
-										>
-											{formatPhone(apt.phone)}
-										</bdi>
-									{/if}
-								</div>
-								<span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium {status.class}">
-									{status.label}
-								</span>
-							</div>
-							<div class="mt-2 space-y-0.5 text-xs text-muted-foreground">
-								{#if !isPatientView}
-									<p>{apt.doctorName} — {apt.specialty}</p>
-								{/if}
-								<p class="tabular-nums">
-									{formatFaDate(apt.dateTime)} · {formatFaTime(apt.dateTime)}
-								</p>
-							</div>
-						</div>
-						{#if canEditRow(apt) || canPatientCancelRow(apt) || showPatientCancelLateHint(apt)}
-							<div class="mt-3 space-y-2 border-t border-border/40 pt-3">
-								{#if canEditRow(apt) || canPatientCancelRow(apt)}
-									<div class="flex gap-2">
-										{#if canEditRow(apt)}
-											<Button
-												variant="outline"
-												size="sm"
-												class="h-8 flex-1 rounded-lg"
-												onclick={() => requestEdit(apt)}
-											>
-												<Pencil class="ml-1.5 h-3.5 w-3.5" />
-												ویرایش نوبت
-											</Button>
-										{/if}
-										{#if canPatientCancelRow(apt)}
-											<Button
-												variant="outline"
-												size="sm"
-												class="h-8 flex-1 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-												onclick={() => requestCancel(apt)}
-											>
-												<XCircle class="ml-1.5 h-3.5 w-3.5" />
-												لغو نوبت
-											</Button>
-										{/if}
-									</div>
-								{/if}
-								{#if showPatientCancelLateHint(apt)}
-									<p class="text-[11px] leading-relaxed text-muted-foreground">
-										{PATIENT_CANCEL_TOO_LATE_MESSAGE}
-									</p>
-								{/if}
-							</div>
-						{:else if canRescheduleRow(apt) || canCancelRow(apt) || canSmsRow(apt)}
-							<div class="mt-3 flex flex-wrap gap-2 border-t border-border/40 pt-3">
-								{#if canRescheduleRow(apt)}
-									<Button
-										variant="outline"
-										size="sm"
-										class="h-8 flex-1 rounded-lg"
-										onclick={() => requestReschedule(apt)}
-									>
-										<CalendarClock class="ml-1.5 h-3.5 w-3.5" />
-										تغییر زمان
-									</Button>
-								{/if}
-								{#if canCancelRow(apt)}
-									<Button
-										variant="outline"
-										size="sm"
-										class="h-8 flex-1 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-										onclick={() => requestCancel(apt)}
-									>
-										<XCircle class="ml-1.5 h-3.5 w-3.5" />
-										لغو
-									</Button>
-								{/if}
-								{#if canSmsRow(apt)}
-									<Button
-										variant="outline"
-										size="sm"
-										class="h-8 flex-1 rounded-lg"
-										onclick={() => requestSms(apt)}
-									>
-										<MessageSquareText class="ml-1.5 h-3.5 w-3.5" />
-										پیامک
-									</Button>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
+			<AppointmentsMobileList
+				appointments={paginated}
+				{isPatientView}
+				{clickablePatients}
+				{highlightedId}
+				onOpenPatient={openPatient}
+				{canEditRow}
+				{canPatientCancelRow}
+				{canRescheduleRow}
+				{canCancelRow}
+				{canSmsRow}
+				{showPatientCancelLateHint}
+				onEdit={requestEdit}
+				onCancel={requestCancel}
+				onReschedule={requestReschedule}
+				onSms={requestSms}
+			/>
 
 			<TablePagination bind:page {pageSize} total={filteredAppointments.length} />
 		{/if}
 	</CardContent>
 </Card>
 
-<Dialog bind:open={confirmOpen} class="max-w-sm">
-	<div class="space-y-4 text-right">
-		<div>
-			<h3 class="text-base font-semibold">لغو نوبت</h3>
-			<p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-				{#if cancelTarget}
-					{#if isPatientView}
-						آیا از لغو نوبت خود در
-						<span class="tabular-nums">{formatFaDate(cancelTarget.dateTime)}</span>
-						ساعت
-						<span class="tabular-nums">{formatFaTime(cancelTarget.dateTime)}</span>
-						اطمینان دارید؟
-						<span class="mt-2 block text-xs">{PATIENT_CANCEL_REFUND_NOTE}</span>
-					{:else}
-						آیا از لغو نوبت
-						<strong class="text-foreground">{cancelTarget.patientName}</strong>
-						در
-						<span class="tabular-nums">{formatFaDate(cancelTarget.dateTime)}</span>
-						اطمینان دارید؟
-					{/if}
-				{/if}
-			</p>
-		</div>
-		{#if actionError}
-			<p class="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{actionError}</p>
-		{/if}
-		<div class="flex flex-wrap justify-end gap-2">
-			<Button
-				variant="ghost"
-				size="sm"
-				class="rounded-xl"
-				disabled={cancelling}
-				onclick={() => {
-					confirmOpen = false;
-					cancelTarget = null;
-				}}
-			>
-				انصراف
-			</Button>
-			<Button
-				variant="destructive"
-				size="sm"
-				class="rounded-xl"
-				disabled={cancelling}
-				onclick={confirmCancel}
-			>
-				{#if cancelling}
-					<LoaderCircle class="ml-1.5 h-4 w-4 animate-spin" />
-				{/if}
-				لغو نوبت
-			</Button>
-		</div>
-	</div>
-</Dialog>
+<AppointmentCancelDialog
+	bind:open={confirmOpen}
+	appointment={cancelTarget}
+	{isPatientView}
+	{actionError}
+	{cancelling}
+	onConfirm={confirmCancel}
+	onDismiss={dismissCancel}
+/>
 
 <AppointmentRescheduleDialog
 	bind:open={rescheduleOpen}

@@ -1,99 +1,88 @@
 # وضعیت پنل همه‌کاره هومبان (CRM + CMS)
 
-آخرین به‌روزرسانی: ۱۴۰۵/۰۶/۱۰
+آخرین به‌روزرسانی: ۱۴۰۵/۰۶/۱۲
+
+کاتالوگ کامل امکانات: [`FEATURES.md`](./FEATURES.md)
 
 ## معماری
 
-- پنل داخل `/dashboard/*` (اپ جدا نیست)
+- پنل داخل `/dashboard/*`
 - نقش‌ها: `admin` | `secretary` | `doctor` | `writer` | `patient`
-- بک‌اند: PocketBase — فرانت: SvelteKit + Tailwind RTL (Svelte 5)
+- بک‌اند: PocketBase — فرانت: SvelteKit 5 + Tailwind RTL
 - دیپلوی: `@sveltejs/adapter-node` — `npm run build && npm run start`
-- فونت: Vazirmatn — تم: پالت سبز ملایم ColorHunt (`#659287` … `#E6F2DD`)
 
 ## مسیرها
 
-| مسیر | نقش‌های مجاز | وضعیت UI | بک‌اند |
-|------|--------------|----------|--------|
+| مسیر | نقش‌های مجاز | وضعیت | بک‌اند |
+|------|--------------|--------|--------|
 | `/dashboard` | همهٔ لاگین‌شده | ✅ نقش‌محور | PB |
-| `/dashboard/appointments` | admin, secretary, doctor | ✅ KPI + لیست | PB (بدون mock اجباری) |
-| `/dashboard/calendar` | admin, secretary | ✅ ماه/هفته/روز | PB appointments |
-| `/dashboard/desk/*` | admin, secretary | ✅ میز منشی + حسابداری | PB |
-| `/dashboard/patients` | admin, doctor | ✅ بازطراحی لیست | PB |
-| `/dashboard/patients/[id]` | admin, doctor | ✅ جزئیات + ویتال/دارو از PB | PB + notes |
-| `/dashboard/doctors` | admin, secretary | ✅ گرید کارت | PB |
-| `/dashboard/doctors/[id]` | admin, secretary | ✅ جزئیات (آمار mock) | PB |
-| `/dashboard/doctors/new` | admin, secretary | ✅ افزودن متخصص | PB |
-| `/dashboard/departments` | admin, secretary | ✅ KPI / نمودار | PB + fallback mock |
-| `/dashboard/inventory` | admin, secretary | ✅ گرید / KPI | PB (بدون fallback mock) |
-| `/dashboard/messages` | admin, secretary, doctor | ✅ اینباکس | PB (بدون fallback mock) |
-| `/dashboard/services` | admin, secretary | ✅ کارت تعرفه | PB |
-| `/dashboard/articles` | admin, writer, secretary | ✅ CRUD shadcn | PB |
-| `/dashboard/tests` + `[id]` | admin, secretary, writer | ✅ CRUD shadcn | PB |
-| `/dashboard/schedule` | doctor, admin | ✅ ساعات حضور | PB |
-| `/dashboard/admin` | admin | ✅ هاب مدیریت | PB |
-| `/dashboard/admin/staff` | admin | ✅ کارکنان | PB |
+| `/dashboard/appointments` | admin, secretary, doctor, patient | ✅ | PB |
+| `/dashboard/calendar` | admin, secretary | ✅ | PB |
+| `/dashboard/desk/*` | admin, secretary | ✅ حسابداری | PB |
+| `/dashboard/patients` | admin, doctor | ✅ | PB |
+| `/dashboard/patients/[id]` | admin, doctor | ✅ notes/ارجاع/پیوست | PB |
+| `/dashboard/doctors` | admin, secretary | ✅ | PB |
+| `/dashboard/doctors/[id]` | admin, secretary | ✅ آمار واقعی نوبت/مراجع | PB |
+| `/dashboard/doctors/new` | admin, secretary | ✅ | PB |
+| `/dashboard/inventory` | admin, secretary | ✅ بدون mock | PB |
+| `/dashboard/messages` | admin, secretary, doctor | ✅ بدون mock | PB |
+| `/dashboard/services` | admin, secretary | ✅ | PB |
+| `/dashboard/articles` | admin, writer, secretary | ✅ | PB |
+| `/dashboard/tests` + `[id]` | writer, admin | ✅ | PB |
+| `/dashboard/schedule` | doctor, admin | ✅ | PB |
+| `/dashboard/admin` · `staff` | admin | ✅ | PB |
 | `/dashboard/settings` | admin | ✅ SMS outbox | PB |
-| `/dashboard/help` | همه | ✅ راهنما (شماره تست فقط dev) | — |
-| `/dashboard/profile` | همه | ✅ پروفایل + push | PB |
-| **اعلان‌ها (زنگوله)** | همهٔ لاگین‌شده | ✅ فاز ۰–۲ + Web Push | [`docs/NOTIFICATIONS.md`](NOTIFICATIONS.md) |
-| `/appointments/book` | همه | ✅ رزرو با انتخاب متخصص | PB |
+| `/dashboard/help` | همه | ✅ | — |
+| `/dashboard/profile` | همه | ✅ + Web Push | API/PB |
+| اعلان زنگوله | همه | ✅ + Push | PB realtime |
+| `/appointments/book` | لاگین | ✅ زرین‌پال | API |
 
----
+## امنیت (انجام‌شده)
 
-## امنیت (انجام‌شده اخیر)
+- [x] RBAC default-deny روی `/dashboard/*`
+- [x] قفل role / نوبت سرور-only / CSRF Origin / TRUST_PROXY
+- [x] پروفایل فقط `/api/profile*`
+- [x] مبلغ خدمت از DB · E2E امنیتی
+- [x] Service Worker — API و PB کش نمی‌شوند
+- [x] clinical_notes و psych_results با ACL سخت
 
-- [x] `/api/sms/send` — auth اجباری + نقش admin/secretary
-- [x] `users.create` قفل — migration `1787000023`
-- [x] رمز/OTP dev فقط سرور — `dev-credentials` در `$lib/server/`
-- [x] صفحه help — شماره‌های تست فقط وقتی `DEV_DEMO_AUTH` یا `dev`
-- [x] RBAC default-deny — مسیرهای ناشناخته `/dashboard/*` بسته
-- [x] Service Worker — API و PocketBase کش نمی‌شوند
+جزئیات: [`SECURITY-FIXES.md`](./SECURITY-FIXES.md)
 
 ## زیرساخت پروداکشن
 
-- [x] `.env.example` — متغیرهای لازم
-- [x] `adapter-node` + اسکریپت `npm run start`
-- [x] GitHub Actions — `check` + `build` + job اختیاری ACL (`npm run verify:acl`)
+- [x] `.env.example` کامل
+- [x] adapter-node + `npm run start`
+- [x] CI: check + build (+ ACL اختیاری)
+- [x] Redis برای production rate-limit/cache
+- [x] OpenAPI `/api/docs`
 
----
+## پیکربندی باقی‌مانده روی سرور زنده
 
-## باقیمانده (نیاز سرور واقعی یا بعدی)
+این‌ها در کد آماده‌اند؛ نیاز به credential/زمان‌بند دارند:
 
-- [ ] OTP/SMS واقعی (Kavenegar)
-- [ ] Cron یادآوری ۲۴h روی سرور (`CRON_SECRET` + Task Scheduler)
-- [ ] `notification_preferences` (فاز ۴ اعلان‌ها)
-- [ ] ویتال/آلرژی/دارو — فیلدهای JSON در `patient_profiles` (migration `1787000024`)؛ UI وقتی داده باشد
-- [ ] نمودارهای جزئیات پزشک — mock fallback
-- [ ] پرداخت آنلاین واقعی
+- [ ] `ZARINPAL_MERCHANT_ID` production
+- [ ] SMS.ir production key + خط اختصاصی
+- [ ] Cron یادآوری ۲۴h (`CRON_SECRET` + Task Scheduler)
+- [ ] `REDIS_URL` / `VAPID_*` / اختیاری `SENTRY_DSN`
 
----
-
-## Env vars
-
-کپی از `.env.example` به `.env.local` و پر کردن مقادیر. تولید VAPID: `node scripts/generate-vapid-keys.mjs`
-
----
-
-## اسکریپت‌های QA محلی
-
-```bash
-npm run check          # typecheck
-npm run build          # build پروداکشن
-npm run verify:acl     # نیاز PocketBase روشن + .env.local
-```
-
----
-
-## فازها (خلاصه)
+## فازها
 
 | فاز | وضعیت |
 |-----|--------|
 | CRM + CMS + RBAC | ✅ |
-| موج UI Medlink | ✅ (عمده صفحات) |
-| Desk + حسابداری | ✅ |
-| اعلان in-app + realtime | ✅ |
-| Web Push / PWA | ✅ (preview/build) |
-| ارجاع بین متخصصین | ✅ |
-| لندینگ متخصصین masonry | ✅ |
-| SMS/OTP پروداکشن | ⬜ |
-| Cron یادآوری | ⬜ endpoint هست |
+| Desk + حسابداری + زرین‌پال | ✅ |
+| اعلان in-app + Web Push | ✅ |
+| Psych NEO/generic سرور-side | ✅ |
+| سخت‌گیری امنیتی فاز ۲–۴ | ✅ |
+| کیفیت/عملکرد (کش، fields، حذف mock داغ) | ✅ |
+| ترجیحات اعلان کاربر | ⬜ backlog |
+
+## QA محلی
+
+```bash
+npm run check
+npm run test
+npm run e2e
+npm run verify:acl   # نیاز PB روشن + .env
+npm run build
+```

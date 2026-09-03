@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { getUser, clearAuth, isAuthHydrated, refreshAuthUser } from '$lib/auth.svelte';
 	import { formatFaDate } from '$lib/date';
 	import { globalSearch } from '$lib/search.svelte';
@@ -13,13 +12,7 @@
 	import SidebarBody from '$lib/components/ui/sidebar-body.svelte';
 	import AppSidebar, { type AppNavGroup } from '$lib/components/app-sidebar.svelte';
 	import {
-		LayoutDashboard,
-		Calendar,
-		ClipboardList,
-		Users,
 		Menu,
-		CalendarDays,
-		UserCog,
 		Search
 	} from '@lucide/svelte';
 	import {
@@ -30,14 +23,24 @@
 	import { initPushForUser } from '$lib/push/push.svelte';
 	import PushEnablePrompt from '$lib/push/components/push-enable-prompt.svelte';
 	import { pb } from '$lib/pocketbase';
+	import type { AuthUser } from '$lib/auth.svelte';
+	import { browser } from '$app/environment';
 
-	let { children } = $props();
+	let {
+		children,
+		/** SSR session user when client PocketBase auth is not yet hydrated (E2E cookie login). */
+		fallbackUser = null as AuthUser
+	} = $props();
 
-	let user = $derived(getUser());
+	let user = $derived(getUser() ?? fallbackUser);
 	let hydrated = $derived(isAuthHydrated());
+	let clientActive = $state(false);
+	$effect(() => {
+		if (browser) clientActive = true;
+	});
+	const shellReady = $derived(Boolean(fallbackUser) || hydrated || clientActive);
 	let sidebarOpen = $state(false);
 	let authAvatarSynced = $state(false);
-	let pathname = $derived($page.url.pathname);
 	const todayLabel = $derived(formatFaDate(new Date()));
 
 	$effect(() => {
@@ -89,42 +92,6 @@
 		};
 		return labels[role] ?? 'کاربر';
 	}
-
-	const adminPrimary = [
-		{ icon: LayoutDashboard, label: 'داشبورد', path: '/dashboard' },
-		{ icon: Users, label: 'مراجعان', path: '/dashboard/patients' },
-		{ icon: UserCog, label: 'همکاران', path: '/dashboard/admin/staff' }
-	] as const;
-
-	const primaryNav = $derived.by(() => {
-		const role = user?.role;
-		if (role === 'admin') {
-			return adminPrimary.map((item) => ({
-				icon: item.icon,
-				label: item.label,
-				path: item.path
-			}));
-		}
-		if (role === 'secretary') {
-			return [
-				{ icon: LayoutDashboard, label: 'داشبورد', path: '/dashboard' },
-				{ icon: CalendarDays, label: 'نوبت‌ها', path: '/dashboard/appointments' },
-				{ icon: ClipboardList, label: 'حسابداری', path: '/dashboard/desk/accounting' }
-			];
-		}
-		if (role === 'doctor') {
-			return [
-				{ icon: LayoutDashboard, label: 'داشبورد', path: '/dashboard/appointments' },
-				{ icon: Users, label: 'مراجعان', path: '/dashboard/patients' }
-			];
-		}
-		return [
-			{ icon: LayoutDashboard, label: 'داشبورد', path: '/dashboard' },
-			{ icon: CalendarDays, label: 'نوبت‌ها', path: '/dashboard/appointments' },
-			{ icon: Calendar, label: 'رزرو', path: '/appointments/book' },
-			{ icon: ClipboardList, label: 'تست‌ها', path: '/tests' }
-		];
-	});
 
 	/** Groups match shadcn Sidebar.MenuSub screenshot: label + indented links. */
 	const navGroups = $derived.by((): AppNavGroup[] => {
@@ -211,28 +178,19 @@
 		];
 	});
 
-	function isActive(path: string) {
-		if (path === '/dashboard') return pathname === '/dashboard';
-		return pathname === path || pathname.startsWith(path + '/');
-	}
-
 	function navigate(path: string) {
 		goto(path);
 	}
-
-	const bottomCols = $derived(
-		user?.role === 'admin' || user?.role === 'doctor' ? 'grid-cols-3' : 'grid-cols-4'
-	);
 </script>
 
 <svelte:window onkeydown={handleSearchKeydown} />
 
-{#if !hydrated}
+{#if !shellReady}
 	<div class="flex min-h-dvh items-center justify-center bg-background">
 		<p class="text-sm text-muted-foreground">در حال بارگذاری...</p>
 	</div>
 {:else if user}
-	<div class="min-h-dvh bg-background">
+	<div class="min-h-dvh bg-background" data-testid="app-shell-ready">
 		<div class="flex min-h-dvh flex-col md:mr-52">
 			<header
 				class="safe-top relative sticky top-0 z-20 flex h-14 items-center gap-2 bg-background/70 px-3 backdrop-blur-xl print:hidden sm:gap-3 sm:px-5 xl:h-16 xl:px-6"
@@ -278,7 +236,7 @@
 			<GlobalSearchPanel />
 
 			<main
-				class="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] print:p-0 sm:px-5 sm:py-5 md:pb-8 xl:px-6 xl:py-6"
+				class="safe-bottom mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 print:p-0 sm:px-5 sm:py-5 xl:px-6 xl:py-6"
 			>
 				<div class="print:hidden">
 					<DashboardUpdateBanner role={user.role ?? null} />
@@ -291,43 +249,12 @@
 			<AppSidebar groups={navGroups} onNavigate={() => (sidebarOpen = false)} />
 		</SidebarBody>
 
-		<nav
-			class="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-card/95 backdrop-blur print:hidden md:hidden"
-		>
-			<div class="mx-auto grid max-w-lg {bottomCols}">
-				{#each primaryNav as item (item.path)}
-					<button
-						type="button"
-						class="flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors sm:text-[11px] {isActive(
-							item.path
-						)
-							? 'text-primary'
-							: 'text-muted-foreground'}"
-						onclick={() => navigate(item.path)}
-					>
-						<item.icon class="h-5 w-5" />
-						{item.label}
-					</button>
-				{/each}
-				{#if user.role !== 'admin'}
-					<button
-						type="button"
-						class="flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium text-muted-foreground sm:text-[11px]"
-						onclick={() => (sidebarOpen = true)}
-					>
-						<Menu class="h-5 w-5" />
-						بیشتر
-					</button>
-				{/if}
-			</div>
-		</nav>
-
 		<PushEnablePrompt />
 
 		<NotificationToastStack />
 	</div>
 {:else}
-	<div class="flex min-h-dvh items-center justify-center bg-background">
-		<p class="text-sm text-muted-foreground">در حال انتقال...</p>
+	<div class="min-h-dvh bg-background" data-testid="app-shell-guest">
+		{@render children()}
 	</div>
 {/if}

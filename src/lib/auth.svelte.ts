@@ -70,6 +70,23 @@ export function hydrateAuth() {
 	syncFromPocketBase();
 	hydrated = true;
 	void syncSessionCookie();
+	void hydrateAuthFromSession();
+}
+
+/** When only httpOnly session cookie exists (API login, E2E), restore PocketBase client auth. */
+export async function hydrateAuthFromSession(): Promise<void> {
+	if (typeof window === 'undefined' || pb.authStore.isValid) return;
+	try {
+		const res = await fetch('/api/auth/session', { credentials: 'include' });
+		if (!res.ok) return;
+		const data = (await res.json()) as { token?: string; record?: AuthUser };
+		if (!data.token || !data.record) return;
+		pb.authStore.save(data.token, data.record as never);
+		currentUser = enrichUser(data.record);
+		hydrated = true;
+	} catch {
+		/* offline */
+	}
 }
 
 if (typeof window !== 'undefined') {

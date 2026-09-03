@@ -166,7 +166,7 @@ async function fetchAppointments(user: AppointmentsUser): Promise<AppointmentLis
 			filter = `patient = "${user.id}"`;
 		}
 
-		const limit = user.role === 'patient' || user.role === 'doctor' ? 50 : 200;
+		const limit = user.role === 'patient' || user.role === 'doctor' ? 50 : 100;
 
 		const result = await pb.collection('appointments').getList(1, limit, {
 			filter,

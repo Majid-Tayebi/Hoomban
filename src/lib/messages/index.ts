@@ -1,5 +1,5 @@
 export type * from './types';
-export { MESSAGE_THREADS, filterThreads } from './data/mock-data';
+export { filterThreads } from './services/message-filters';
 export {
 	loadMessageThreads,
 	loadMessageRecipients,

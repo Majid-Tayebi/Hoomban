@@ -1,5 +1,13 @@
 import type { UserRole } from '$lib/auth.svelte';
 
+/**
+ * Client + server shared RBAC helpers.
+ *
+ * **Never** treat UI visibility as security — PocketBase API rules and
+ * `+page.server.ts` / API handlers must enforce the same decisions.
+ * See `docs/adr/0002-rbac-dual-layer.md`.
+ */
+
 export type RouteAccess = {
 	path: string;
 	roles: UserRole[] | '*';

@@ -6,7 +6,7 @@ import type {
 	DoctorFilters,
 	DoctorsPageData
 } from '../types';
-import { DEFAULT_SPECIALTIES, MOCK_DOCTORS } from '../data/mock-data';
+import { DEFAULT_SPECIALTIES } from '../data/mock-data';
 import { WEEKDAYS_FA } from '$lib/date';
 import { formatSlotsLabel, resolveDaySlots } from '$lib/schedule/working-schedule';
 
@@ -71,17 +71,17 @@ export async function loadDoctorsPageData(_user: AuthUser): Promise<DoctorsPageD
 			sort: 'sort_order'
 		});
 
-		if (!res.items.length) {
-			return { doctors: MOCK_DOCTORS, specialties: [...DEFAULT_SPECIALTIES] };
-		}
-
 		const doctors = res.items.map((d) => mapDoctor(d as unknown as Record<string, unknown>));
 		const fromData = [...new Set(doctors.map((d) => d.specialty).filter(Boolean))];
 		const specialties = ['همه', ...fromData.filter((s) => s !== 'همه')];
 
-		return { doctors, specialties };
-	} catch {
-		return { doctors: MOCK_DOCTORS, specialties: [...DEFAULT_SPECIALTIES] };
+		return {
+			doctors,
+			specialties: specialties.length > 1 ? specialties : [...DEFAULT_SPECIALTIES]
+		};
+	} catch (err) {
+		console.error('loadDoctorsPageData failed:', err);
+		return { doctors: [], specialties: [...DEFAULT_SPECIALTIES] };
 	}
 }
 

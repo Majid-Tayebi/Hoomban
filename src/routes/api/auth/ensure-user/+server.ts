@@ -15,9 +15,9 @@ function canProvisionUsers(role: string) {
 	return role === 'admin' || role === 'secretary';
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
-		const actor = await getAuthUserFromRequest(request);
+		const actor = await getAuthUserFromRequest(request, cookies);
 		if (!actor || !canProvisionUsers(actor.role)) {
 			return json({ error: 'فقط مدیر یا منشی مجاز است' }, { status: 403 });
 		}

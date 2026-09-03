@@ -233,6 +233,10 @@ export async function loadServiceAvailableSlots(selectedDate: Date): Promise<Boo
 	return slots.filter((slot) => !busyTimes.has(slot.time));
 }
 
+export async function resolveServiceBookingDoctorId(): Promise<string> {
+	return getFallbackDoctorId();
+}
+
 async function getFallbackDoctorId(): Promise<string> {
 	const doctors = await loadBookingDoctors();
 	if (!doctors.length) throw new Error('متخصص فعالی برای ثبت نوبت خدمات یافت نشد');

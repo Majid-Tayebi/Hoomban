@@ -28,7 +28,7 @@
 
 {#if visible && supported && configured}
 	<div
-		class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] start-4 end-4 z-[60] mx-auto max-w-md rounded-2xl border border-border/70 bg-popover/95 p-4 text-popover-foreground shadow-xl backdrop-blur-md sm:bottom-6 sm:start-auto sm:end-6"
+		class="safe-bottom fixed bottom-4 start-4 end-4 z-[60] mx-auto max-w-md rounded-2xl border border-border/70 bg-popover/95 p-4 text-popover-foreground shadow-xl backdrop-blur-md sm:bottom-6 sm:start-auto sm:end-6"
 		role="region"
 		aria-label="فعال‌سازی اعلان push"
 	>

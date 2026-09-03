@@ -1,42 +1,150 @@
-# sv
+# هومبان (Hoomban)
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**پلتفرم اختصاصی کلینیک روانشناسی** — نوبت‌دهی آنلاین، پرونده بالینی، آزمون‌های روان‌شناختی، حسابداری میز پذیرش، CMS مقالات و پنل نقش‌محور.
 
-## Creating a project
+> English version below ↓
 
-If you're seeing this, you've probably already done this step. Congrats!
+---
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## فارسی
 
-To recreate this project with the same configuration:
+### این پروژه چیست؟
 
-```sh
-# recreate this project
-npx sv@0.17.0 create --template minimal --types ts --no-install .
-```
+هومبان یک **سامانه عملیاتی کلینیک** است، نه یک وب‌سایت عمومی ساده. از لندینگ و رزرو نوبت تا پرونده مراجع، یادداشت بالینی، آزمون NEO-240، پرداخت زرین‌پال، پیامک، اعلان و مدیریت محتوا را در یک پشتهٔ یکپارچه پوشش می‌دهد.
 
-## Developing
+| نقش | دسترسی نمونه |
+|-----|----------------|
+| **مدیر** | کارکنان، تنظیمات، حسابداری، ACL کامل |
+| **منشی** | میز پذیرش، نوبت، تقویم، مراجعان (هماهنگی)، خدمات، انبار |
+| **روانشناس** | پرونده و یادداشت بالینی، نوبت‌های خود، ارجاع |
+| **نویسنده** | ویرایش آزمون‌ها و مقالات |
+| **مراجع** | رزرو، پروفایل، نتایج آزمون خود |
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### پشته فناوری
 
-```sh
+| لایه | فناوری |
+|------|--------|
+| فرانت / BFF | SvelteKit 5 · Svelte 5 · Tailwind · shadcn-svelte |
+| بک‌اند داده | PocketBase 0.27 (Auth · ACL · فایل · Realtime) |
+| پرداخت | زرین‌پال (sandbox / production) |
+| پیامک | SMS.ir |
+| تست | Vitest · Playwright |
+| استقرار | `@sveltejs/adapter-node` |
+
+### پیش‌نیازها
+
+- Node.js **22+**
+- PocketBase **0.27+** در پوشه `pocketbase/`
+- (اختیاری در dev / اجباری در production) Redis برای rate-limit و کش
+
+### راه‌اندازی محلی
+
+```powershell
+npm install
+copy .env.example .env
+
+cd pocketbase
+.\pocketbase.exe migrate
+.\pocketbase.exe serve --http=127.0.0.1:8090
+
+# ترمینال دیگر
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+برای ورود سریع توسعه: `DEV_DEMO_AUTH=true` در `.env` (در production سرور استارت نمی‌شود).
 
-To create a production version of your app:
+| نقش | نام کاربری | رمز |
+|-----|------------|-----|
+| مدیر / منشی / روانشناس / نویسنده / مراجع | `admin` · `secretary` · `doctor` · `writer` · `patient` | `12341234` |
 
-```sh
-npm run build
+### اسکریپت‌ها
+
+| دستور | توضیح |
+|-------|-------|
+| `npm run dev` | سرور توسعه |
+| `npm run build` / `npm run start` | بیلد و اجرای production |
+| `npm run check` | TypeScript + Svelte |
+| `npm run test` | تست واحد |
+| `npm run e2e` | Playwright |
+| `npm run verify:acl` | صحت قوانین دسترسی PocketBase |
+
+### مستندات
+
+| سند | موضوع |
+|-----|--------|
+| [docs/FEATURES.md](docs/FEATURES.md) | کاتالوگ کامل امکانات |
+| [docs/WHY-NOT-WORDPRESS.md](docs/WHY-NOT-WORDPRESS.md) | چرا کدنویسی اختصاصی بهتر از وردپرس است (برای کارفرما) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | معماری سیستم |
+| [docs/DEVELOPING.md](docs/DEVELOPING.md) | راهنمای توسعه‌دهنده |
+| [docs/SECURITY-FIXES.md](docs/SECURITY-FIXES.md) | تاریخچه سخت‌گیری امنیتی |
+| [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) | سیستم اعلان و Web Push |
+| [docs/PANEL_STATUS.md](docs/PANEL_STATUS.md) | وضعیت ماژول‌های پنل |
+| [docs/adr/](docs/adr/) | تصمیم‌های معماری (احراز هویت، RBAC) |
+
+### امنیت (خلاصه)
+
+- RBAC **دو لایه**: قوانین PocketBase + گارد SvelteKit
+- مبلغ پرداخت خدمت فقط از دیتابیس با `serviceId` (نه از کلاینت)
+- ویرایش پروفایل فقط از `/api/profile*`
+- CSRF Origin، rate-limit، قفل ارتقای نقش، توکن خارج از `localStorage`
+- فایل‌های بالینی در استوریج PocketBase با ACL — نه در مرورگر
+
+### استقرار
+
+```bash
+npm run build && npm run start
 ```
 
-You can preview the production build with `npm run preview`.
+PocketBase جداگانه اجرا شود. متغیرهای حیاتی: `POCKETBASE_URL`، `PUBLIC_POCKETBASE_URL`، `PUBLIC_APP_URL`، و در production `REDIS_URL`. جزئیات در `.env.example`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+---
+
+## English
+
+### What is Hoomban?
+
+Hoomban is a **clinic operations platform** for a psychology practice—not a brochure site. It combines public booking, clinical records, psychometrics (including NEO-240), desk accounting, Zarinpal payments, SMS, notifications, and an editorial CMS in one stack.
+
+| Role | Example access |
+|------|----------------|
+| **Admin** | Staff, settings, full ACL |
+| **Secretary** | Front desk, calendar, coordination patients, services, inventory |
+| **Doctor** | Clinical notes, own appointments, referrals |
+| **Writer** | Psych tests & articles |
+| **Patient** | Booking, profile, own test results |
+
+### Stack
+
+| Layer | Tech |
+|-------|------|
+| App / BFF | SvelteKit 5 · Svelte 5 · Tailwind · shadcn-svelte |
+| Data API | PocketBase 0.27 (auth, ACL, files, realtime) |
+| Payments | Zarinpal |
+| SMS | SMS.ir |
+| Tests | Vitest · Playwright |
+| Deploy | Node adapter (`npm run build && npm run start`) |
+
+### Local setup
+
+```powershell
+npm install
+copy .env.example .env
+cd pocketbase && .\pocketbase.exe migrate && .\pocketbase.exe serve --http=127.0.0.1:8090
+npm run dev
+```
+
+Dev quick-login: set `DEV_DEMO_AUTH=true` (blocked in production startups). Demo users: `admin` / `secretary` / `doctor` / `writer` / `patient` with password `12341234`.
+
+### Documentation map
+
+- **[FEATURES](docs/FEATURES.md)** — full product capability catalog  
+- **[Why not WordPress](docs/WHY-NOT-WORDPRESS.md)** — client-facing comparison  
+- **[Architecture](docs/ARCHITECTURE.md)** · **[Developing](docs/DEVELOPING.md)** · **[Security fixes](docs/SECURITY-FIXES.md)** · **[ADRs](docs/adr/)**
+
+### Security highlights
+
+Dual-layer RBAC (PocketBase rules + SvelteKit guards), server-authoritative payment amounts, profile writes only via `/api/profile*`, Origin CSRF checks, rate limiting, role self-escalation locked, in-memory auth store (no token in `localStorage`), clinical files behind PB ACL.
+
+### License / ownership
+
+Private clinic software — not an open-source template. Contact the project owner for deployment and commercial use.

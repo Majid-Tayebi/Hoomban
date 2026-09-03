@@ -1,136 +1,45 @@
 import { pb } from '$lib/pocketbase';
+import type { ProfileRecord } from './profile-types';
+import {
+	mapProfileRecord,
+	stripUsernamePrefix,
+	isValidUsername
+} from './profile-mappers';
+
+export type { ProfileRecord } from './profile-types';
+export {
+	normalizeIranMobile,
+	mobileLocalPart,
+	isValidIranMobile,
+	isValidUsername,
+	stripUsernamePrefix,
+	usernameWithPrefix,
+	splitFullName,
+	userAvatarUrl,
+	mapProfileRecord
+} from './profile-mappers';
 
 const profileRequestOptions = { $autoCancel: false as const };
 
-export type ProfileRecord = {
-	id: string;
-	name: string;
-	email: string;
-	mobile: string;
-	username: string;
-	birthDate: string;
-	province: string;
-	city: string;
-	homeAddress: string;
-	landline: string;
-	address: string;
-	avatarUrl: string | null;
-	verified: boolean;
-};
-
-export function normalizeIranMobile(raw: string): string {
-	let digits = raw.replace(/\D/g, '');
-	if (digits.startsWith('98') && digits.length === 12) digits = '0' + digits.slice(2);
-	if (digits.startsWith('9') && digits.length === 10) digits = '0' + digits;
-	return digits;
+function authHeaders(json = true): HeadersInit {
+	return {
+		...(json ? { 'Content-Type': 'application/json' } : {}),
+		...(pb.authStore.token ? { Authorization: `Bearer ${pb.authStore.token}` } : {})
+	};
 }
 
-export function mobileLocalPart(mobile: string): string {
-	const normalized = normalizeIranMobile(mobile);
-	return normalized.startsWith('0') ? normalized.slice(1) : normalized;
-}
-
-export function isValidIranMobile(mobile: string): boolean {
-	return /^09\d{9}$/.test(normalizeIranMobile(mobile));
-}
-
-export function isValidUsername(value: string): boolean {
-	const bare = stripUsernamePrefix(value);
-	return /^[a-zA-Z0-9_]{3,30}$/.test(bare);
-}
-
-export function stripUsernamePrefix(value: string): string {
-	return value.replace(/^@+/, '').trim();
-}
-
-export function usernameWithPrefix(value: string): string {
-	const bare = stripUsernamePrefix(value);
-	return bare ? `@${bare}` : '@';
-}
-
-export function splitFullName(full: string): { firstName: string; lastName: string } {
-	const parts = full.trim().split(/\s+/).filter(Boolean);
-	if (!parts.length) return { firstName: '', lastName: '' };
-	if (parts.length === 1) return { firstName: parts[0], lastName: '' };
-	return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
-}
-
-function avatarUrlFromRecord(record: { id: string; avatar?: unknown; updated?: unknown }): string | null {
-	if (!record.avatar) return null;
-	const base = pb.files.getURL(
-		{ id: record.id, collectionName: 'users' } as never,
-		String(record.avatar)
-	);
-	const cacheKey = record.updated ? String(record.updated) : record.id;
-	return `${base}${base.includes('?') ? '&' : '?'}v=${encodeURIComponent(cacheKey)}`;
-}
-
-export function userAvatarUrl(
-	userId: string,
-	avatar: unknown,
-	updated?: unknown
-): string | null {
-	if (!avatar) return null;
-	return avatarUrlFromRecord({ id: userId, avatar, updated });
-}
-
-function pocketBaseErrorMessage(error: unknown): string {
-	if (error instanceof Error && /auto[\s-]?cancel/i.test(error.message)) {
-		return 'درخواست قبلی لغو شد — لطفاً دوباره تلاش کنید';
+async function readApiError(res: Response, fallback: string): Promise<string> {
+	try {
+		const data = (await res.json()) as { error?: string };
+		return data.error || fallback;
+	} catch {
+		return fallback;
 	}
-	if (error && typeof error === 'object' && 'response' in error) {
-		const response = (error as { response?: { data?: Record<string, { message?: string }>; message?: string } })
-			.response;
-		const fieldMsg = response?.data
-			? Object.values(response.data)
-					.map((item) => item?.message)
-					.filter(Boolean)
-					.join(' — ')
-			: '';
-		if (fieldMsg) return fieldMsg;
-		if (response?.message) return response.message;
-	}
-	if (error instanceof Error) return error.message;
-	return 'ذخیره ناموفق بود';
 }
 
 export async function loadProfile(userId: string): Promise<ProfileRecord> {
 	const record = await pb.collection('users').getOne(userId, profileRequestOptions);
 	return mapProfileRecord(record);
-}
-
-export function mapProfileRecord(record: {
-	id: string;
-	name?: unknown;
-	email?: unknown;
-	mobile?: unknown;
-	username?: unknown;
-	birth_date?: unknown;
-	province?: unknown;
-	city?: unknown;
-	home_address?: unknown;
-	landline?: unknown;
-	address?: unknown;
-	avatar?: unknown;
-	verified?: unknown;
-	updated?: unknown;
-}): ProfileRecord {
-	const birthRaw = record.birth_date ? String(record.birth_date).slice(0, 10) : '';
-	return {
-		id: record.id,
-		name: String(record.name || ''),
-		email: String(record.email || ''),
-		mobile: String(record.mobile || ''),
-		username: String(record.username || ''),
-		birthDate: birthRaw,
-		province: String(record.province || ''),
-		city: String(record.city || ''),
-		homeAddress: String(record.home_address || record.address || ''),
-		landline: String(record.landline || ''),
-		address: String(record.address || ''),
-		avatarUrl: avatarUrlFromRecord(record),
-		verified: Boolean(record.verified)
-	};
 }
 
 export type SaveProfileDetailsInput = {
@@ -148,14 +57,6 @@ export type SaveProfileAddressInput = {
 	landline: string;
 };
 
-async function updateUserFields(userId: string, data: Record<string, string>) {
-	const form = new FormData();
-	for (const [key, value] of Object.entries(data)) {
-		if (value !== undefined) form.append(key, value);
-	}
-	await pb.collection('users').update(userId, form, profileRequestOptions);
-}
-
 export async function checkFieldUnique(
 	field: 'mobile' | 'username',
 	value: string,
@@ -164,10 +65,8 @@ export async function checkFieldUnique(
 	try {
 		const res = await fetch('/api/profile/check-unique', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				...(pb.authStore.token ? { Authorization: `Bearer ${pb.authStore.token}` } : {})
-			},
+			headers: authHeaders(),
+			credentials: 'include',
 			body: JSON.stringify({ field, value, excludeUserId: userId })
 		});
 		const data = (await res.json()) as { available?: boolean; error?: string };
@@ -194,44 +93,61 @@ export async function saveProfileDetails(userId: string, input: SaveProfileDetai
 		if (!unique.available) throw new Error(unique.error);
 	}
 
-	const payload: Record<string, string> = { name };
-	if (username) payload.username = username;
-	if (input.birthDate) payload.birth_date = input.birthDate;
-
-	try {
-		await updateUserFields(userId, payload);
-	} catch (error) {
-		throw new Error(pocketBaseErrorMessage(error));
-	}
+	const res = await fetch('/api/profile', {
+		method: 'PATCH',
+		headers: authHeaders(),
+		credentials: 'include',
+		body: JSON.stringify({
+			section: 'details',
+			name,
+			username: username || undefined,
+			birthDate: input.birthDate || undefined
+		})
+	});
+	if (!res.ok) throw new Error(await readApiError(res, 'ذخیره پروفایل ناموفق بود'));
+	const data = (await res.json()) as { record?: ProfileRecord };
 
 	if (input.avatarFile) {
-		const avatarData = new FormData();
-		avatarData.append('avatar', input.avatarFile);
-		try {
-			await pb.collection('users').update(userId, avatarData, profileRequestOptions);
-		} catch (error) {
-			throw new Error(`ذخیره عکس پروفایل ناموفق بود — ${pocketBaseErrorMessage(error)}`);
+		const form = new FormData();
+		form.append('avatar', input.avatarFile);
+		const avatarRes = await fetch('/api/profile/avatar', {
+			method: 'POST',
+			headers: {
+				...(pb.authStore.token ? { Authorization: `Bearer ${pb.authStore.token}` } : {})
+			},
+			credentials: 'include',
+			body: form
+		});
+		if (!avatarRes.ok) {
+			throw new Error(
+				`ذخیره عکس پروفایل ناموفق بود — ${await readApiError(avatarRes, 'خطا')}`
+			);
 		}
+		const avatarData = (await avatarRes.json()) as { record?: ProfileRecord };
+		if (avatarData.record) return avatarData.record;
 	}
 
-	return pb.collection('users').getOne(userId, profileRequestOptions);
+	if (data.record) return data.record;
+	return loadProfile(userId);
 }
 
-export async function saveProfileAddress(userId: string, input: SaveProfileAddressInput) {
-	const payload: Record<string, string> = {
-		province: input.province.trim(),
-		city: input.city.trim(),
-		home_address: input.homeAddress.trim(),
-		landline: input.landline.trim()
-	};
-
-	try {
-		await updateUserFields(userId, payload);
-	} catch (error) {
-		throw new Error(pocketBaseErrorMessage(error));
-	}
-
-	return pb.collection('users').getOne(userId, profileRequestOptions);
+export async function saveProfileAddress(_userId: string, input: SaveProfileAddressInput) {
+	const res = await fetch('/api/profile', {
+		method: 'PATCH',
+		headers: authHeaders(),
+		credentials: 'include',
+		body: JSON.stringify({
+			section: 'address',
+			province: input.province,
+			city: input.city,
+			homeAddress: input.homeAddress,
+			landline: input.landline
+		})
+	});
+	if (!res.ok) throw new Error(await readApiError(res, 'ذخیره آدرس ناموفق بود'));
+	const data = (await res.json()) as { record?: ProfileRecord };
+	if (data.record) return data.record;
+	throw new Error('پاسخ نامعتبر از سرور');
 }
 
 /** @deprecated use saveProfileDetails / saveProfileAddress */
@@ -254,45 +170,30 @@ export async function saveProfile(userId: string, input: SaveProfileInput) {
 }
 
 export async function changePassword(
-	userId: string,
+	_userId: string,
 	input: { oldPassword: string; password: string; passwordConfirm: string }
 ) {
 	if (!input.oldPassword) throw new Error('رمز عبور فعلی را وارد کنید');
-	if (input.password.length < 8) throw new Error('رمز جدید باید حداقل ۸ کاراکتر باشد');
-	if (input.password !== input.passwordConfirm) throw new Error('تکرار رمز با رمز جدید یکسان نیست');
-
-	try {
-		return await pb.collection('users').update(
-			userId,
-			{
-				oldPassword: input.oldPassword,
-				password: input.password,
-				passwordConfirm: input.passwordConfirm
-			},
-			profileRequestOptions
-		);
-	} catch (error) {
-		throw new Error(pocketBaseErrorMessage(error));
-	}
+	const res = await fetch('/api/profile/password', {
+		method: 'POST',
+		headers: authHeaders(),
+		credentials: 'include',
+		body: JSON.stringify(input)
+	});
+	if (!res.ok) throw new Error(await readApiError(res, 'تغییر رمز ناموفق بود'));
+	return { ok: true };
 }
 
 export async function setInitialPassword(
-	userId: string,
+	_userId: string,
 	input: { password: string; passwordConfirm: string }
 ) {
-	if (input.password.length < 8) throw new Error('رمز باید حداقل ۸ کاراکتر باشد');
-	if (input.password !== input.passwordConfirm) throw new Error('تکرار رمز با رمز جدید یکسان نیست');
-
-	try {
-		return await pb.collection('users').update(
-			userId,
-			{
-				password: input.password,
-				passwordConfirm: input.passwordConfirm
-			},
-			profileRequestOptions
-		);
-	} catch (error) {
-		throw new Error(pocketBaseErrorMessage(error));
-	}
+	const res = await fetch('/api/profile/password', {
+		method: 'POST',
+		headers: authHeaders(),
+		credentials: 'include',
+		body: JSON.stringify(input)
+	});
+	if (!res.ok) throw new Error(await readApiError(res, 'تنظیم رمز ناموفق بود'));
+	return { ok: true };
 }

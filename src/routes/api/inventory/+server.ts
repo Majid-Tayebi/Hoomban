@@ -31,8 +31,8 @@ function mapItem(row: Record<string, unknown>) {
 	};
 }
 
-export const POST: RequestHandler = async ({ request }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user || !canManageInventory(user.role)) {
 		return json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
 	}

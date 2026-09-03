@@ -1,3 +1,15 @@
-# allow crawling everything by default
+# Hoomban — crawl rules
 User-agent: *
-Disallow:
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /auth
+Disallow: /offline
+Disallow: /tests/result/
+
+Allow: /
+Allow: /articles
+Allow: /faq
+Allow: /tests
+Allow: /appointments/book
+
+Sitemap: /sitemap.xml

@@ -29,6 +29,12 @@ export type NeoAnswerInput = {
 
 export type NeoScoreBand = 'low' | 'medium' | 'high';
 
+export function bandLabelFa(band: NeoScoreBand | string): string {
+	if (band === 'low') return 'پایین';
+	if (band === 'high') return 'بالا';
+	return 'متوسط';
+}
+
 export type NeoScores = {
 	test_type: 'neo_240';
 	domains: Record<NeoDomainKey, number>;
@@ -89,11 +95,16 @@ export function scoreNeo240(
 }
 
 export function isNeoScores(value: unknown): value is NeoScores {
+	if (typeof value !== 'object' || value === null) return false;
+	const v = value as NeoScores;
+	if (v.test_type !== 'neo_240' || typeof v.domains !== 'object' || typeof v.facets !== 'object') {
+		return false;
+	}
 	return (
-		typeof value === 'object' &&
-		value !== null &&
-		(value as NeoScores).test_type === 'neo_240' &&
-		typeof (value as NeoScores).domains === 'object'
+		typeof v.domain_bands === 'object' &&
+		v.domain_bands !== null &&
+		typeof v.facet_bands === 'object' &&
+		v.facet_bands !== null
 	);
 }
 

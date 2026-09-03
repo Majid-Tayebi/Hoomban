@@ -1,25 +1,9 @@
 <script lang="ts">
 	import { ChevronDown } from '@lucide/svelte';
+	import { LANDING_FAQ_ITEMS } from '$lib/landing/faq-items';
 	import { cn } from '$lib/utils';
 
-	const faqs = [
-		{
-			q: 'هومبان چه خدماتی ارائه می‌دهد؟',
-			a: 'روان‌درمانی، روانکاوی، مشاوره خانواده، نوروفیدبک، RTMS، TDCS و تست‌های روانشناسی.'
-		},
-		{
-			q: 'چطور نوبت بگیرم؟',
-			a: 'از دکمه «رزرو نوبت» در سایت وارد شوید، متخصص و زمان را انتخاب کنید.'
-		},
-		{
-			q: 'آیا جلسات آنلاین هم دارید؟',
-			a: 'بله، بسته به نوع درمان و نظر متخصص، امکان مشاوره آنلاین وجود دارد.'
-		},
-		{
-			q: 'اطلاعات پرونده من محرمانه می‌ماند؟',
-			a: 'بله. دسترسی به یادداشت‌های بالینی محدود به متخصص درمان و نقش‌های مجاز است.'
-		}
-	];
+	const faqs = LANDING_FAQ_ITEMS.map((item) => ({ q: item.question, a: item.answer }));
 
 	let openIndex = $state<number | null>(0);
 

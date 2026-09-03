@@ -5,12 +5,12 @@ import { getAdminPb } from '$lib/server/pocketbase';
 import { upsertPushSubscription } from '$lib/server/push/subscriptions';
 import { isVapidConfigured } from '$lib/server/push/vapid';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (!isVapidConfigured()) {
 		return json({ error: 'Web Push پیکربندی نشده' }, { status: 503 });
 	}
 
-	const user = await getAuthUserFromRequest(request);
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 
 	try {

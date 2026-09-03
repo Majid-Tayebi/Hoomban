@@ -1,6 +1,7 @@
 import { ClientResponseError } from 'pocketbase';
 import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
 import type { PatientReferralRow, PatientReferralStatus } from '../types';
+import { loadDoctorDisplayNames } from '$lib/doctors/services/doctor-names';
 
 function mapStatus(raw: string): PatientReferralStatus {
 	const allowed: PatientReferralStatus[] = ['pending', 'accepted', 'completed', 'cancelled'];
@@ -70,22 +71,11 @@ export async function loadPatientReferrals(patientId: string): Promise<PatientRe
 			}
 		}
 
-		await Promise.all(
-			[...doctorIds]
-				.filter((id) => !doctorNames.has(id))
-				.map(async (docId) => {
-					try {
-						const doc = await pb.collection('doctors').getOne(docId, {
-							expand: 'user',
-							...PB_NO_AUTO_CANCEL
-						});
-						const exp = doc.expand as { user?: { name?: string } } | undefined;
-						doctorNames.set(docId, String(doc.display_name || exp?.user?.name || 'متخصص'));
-					} catch {
-						doctorNames.set(docId, 'متخصص');
-					}
-				})
-		);
+		const missing = [...doctorIds].filter((id) => !doctorNames.has(id));
+		if (missing.length) {
+			const fetched = await loadDoctorDisplayNames(missing);
+			for (const [id, name] of fetched) doctorNames.set(id, name);
+		}
 
 		return res.items.map((item) => {
 			const fromId = String(item.from_doctor || '');

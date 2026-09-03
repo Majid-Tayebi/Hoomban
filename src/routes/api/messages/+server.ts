@@ -30,8 +30,8 @@ function mapThread(row: Record<string, unknown>, senderId: string) {
 	};
 }
 
-export const POST: RequestHandler = async ({ request }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user || !STAFF_ROLES.includes(user.role)) {
 		return json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
 	}

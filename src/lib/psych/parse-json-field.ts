@@ -1,11 +1,11 @@
 /** Parse PocketBase JSON fields that may arrive as string or already-parsed object. */
-export function parsePsychJsonField<T>(value: unknown): T {
-	if (value == null) return {} as T;
+export function parsePsychJsonField<T>(value: unknown): T | null {
+	if (value == null) return null;
 	if (typeof value === 'string') {
 		try {
 			return JSON.parse(value) as T;
 		} catch {
-			return {} as T;
+			return null;
 		}
 	}
 	return value as T;

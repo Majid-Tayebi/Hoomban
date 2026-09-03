@@ -1,3 +1,3 @@
 export type * from './types';
-export { INVENTORY_ITEMS, buildInventoryStats, filterInventory } from './data/mock-data';
+export { buildInventoryStats, filterInventory } from './services/inventory-filters';
 export { loadInventoryItems, createInventoryItem, deriveInventoryStatus } from './services/inventory-data';

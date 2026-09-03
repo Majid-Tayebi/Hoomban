@@ -17,8 +17,8 @@ async function staffUserIds(pb: Awaited<ReturnType<typeof getAdminPb>>): Promise
 	}
 }
 
-export const POST: RequestHandler = async ({ request }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) {
 		return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 	}

@@ -9,15 +9,13 @@ import type {
 	PatientDetailProfile,
 	PatientMetaField
 } from '../types';
-import {
-	MOCK_REPORTS
-} from '../data/mock-data';
 import { parsePatientHealthFromProfile } from './patient-health';
 import { formatPatientCodeFromUser } from '../../patient-code';
 import { isServiceAppointment, parseServiceNote } from '$lib/appointments/service-booking';
 import { loadPatientAttachments } from './patient-attachments';
 import { loadPatientReferrals } from './patient-referrals';
 import { userAvatarUrl } from '$lib/profile/services/profile-data';
+import { loadDoctorDisplayNames } from '$lib/doctors/services/doctor-names';
 import { toIsoDateString } from '$lib/date';
 
 type DetailUser = NonNullable<AuthUser>;
@@ -106,11 +104,15 @@ export async function loadPatientDetail(
 ): Promise<{ data: PatientDetailData; doctorRecordId: string | null }> {
 	if (!user) throw new Error('User is required');
 
-	if (user.id === 'demo-user' || patientId.length < 5) {
+	if (user.id === 'demo-user') {
 		return {
 			doctorRecordId: null,
 			data: buildDemoDetail(patientId)
 		};
+	}
+
+	if (patientId.length < 5) {
+		throw new Error('شناسه مراجع نامعتبر است');
 	}
 
 	const u = await pb.collection('users').getOne(patientId, PB_NO_AUTO_CANCEL);
@@ -217,7 +219,7 @@ export async function loadPatientDetail(
 			try {
 				noteRes = await pb.collection('clinical_notes').getList(1, 50, {
 					filter: `patient = "${patientId}"`,
-					expand: 'doctor',
+					expand: 'doctor,doctor.user',
 					sort: '-id',
 					...PB_NO_AUTO_CANCEL
 				});
@@ -245,25 +247,11 @@ export async function loadPatientDetail(
 				if (fromExpand) doctorNames.set(docId, String(fromExpand));
 			}
 
-			await Promise.all(
-				doctorIds
-					.filter((id) => !doctorNames.has(id))
-					.map(async (docId) => {
-						try {
-							const doc = await pb.collection('doctors').getOne(docId, {
-								expand: 'user',
-								...PB_NO_AUTO_CANCEL
-							});
-							const exp = doc.expand as { user?: { name?: string } } | undefined;
-							doctorNames.set(
-								docId,
-								String(doc.display_name || exp?.user?.name || 'متخصص')
-							);
-						} catch {
-							doctorNames.set(docId, 'متخصص');
-						}
-					})
-			);
+			const missing = doctorIds.filter((id) => !doctorNames.has(id));
+			if (missing.length) {
+				const fetched = await loadDoctorDisplayNames(missing);
+				for (const [id, name] of fetched) doctorNames.set(id, name);
+			}
 
 			notes = noteRes.items.map((n) => {
 				const audioFiles = Array.isArray(n.audio)
@@ -306,7 +294,7 @@ export async function loadPatientDetail(
 			},
 			meta,
 			vitals: health.vitals,
-			reports: MOCK_REPORTS,
+			reports: [],
 			conditions: health.conditions,
 			allergies: health.allergies,
 			medications: health.medications,

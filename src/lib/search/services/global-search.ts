@@ -1,9 +1,6 @@
 import { pb } from '$lib/pocketbase';
 import type { UserRole } from '$lib/auth.svelte';
 import { canAccessPatientRecord, canAccessSecretaryPatientDesk, getPatientRecordHref } from '$lib/rbac';
-import { MOCK_DOCTORS } from '$lib/doctors/data/mock-data';
-import { MOCK_PATIENTS } from '$lib/patients/data/mock-data';
-import { MOCK_APPOINTMENT_LIST } from '$lib/appointments/data/mock-data';
 import { formatFaDateTime } from '$lib/date';
 import { formatPatientCodeFromUser } from '$lib/patients/patient-code';
 
@@ -125,8 +122,8 @@ const NAV_SHORTCUTS: NavShortcut[] = [
 	}
 ];
 
-function matchesQuery(text: string, q: string): boolean {
-	return text.toLowerCase().includes(q.toLowerCase());
+function matchesQuery(haystack: string, q: string): boolean {
+	return haystack.toLowerCase().includes(q.toLowerCase());
 }
 
 function searchNavShortcuts(role: string | undefined, q: string): GlobalSearchResult[] {
@@ -142,21 +139,9 @@ function searchNavShortcuts(role: string | undefined, q: string): GlobalSearchRe
 	}));
 }
 
-async function searchDoctors(q: string, isDemo: boolean, role?: string): Promise<GlobalSearchResult[]> {
+async function searchDoctors(q: string, role?: string): Promise<GlobalSearchResult[]> {
 	const hrefFor = (id: string) =>
 		role === 'secretary' ? '/dashboard/doctors' : `/dashboard/doctors/${id}`;
-
-	if (isDemo) {
-		return MOCK_DOCTORS.filter(
-			(d) => matchesQuery(d.displayName, q) || matchesQuery(d.specialty, q)
-		).map((d) => ({
-			id: `doctor-${d.id}`,
-			category: 'متخصص' as const,
-			title: d.displayName,
-			subtitle: d.specialty,
-			href: hrefFor(d.id)
-		}));
-	}
 
 	try {
 		const filter = `(display_name ~ "${q}" || specialty ~ "${q}") && is_active = true`;
@@ -180,30 +165,8 @@ async function searchDoctors(q: string, isDemo: boolean, role?: string): Promise
 	}
 }
 
-async function searchPatients(
-	q: string,
-	isDemo: boolean,
-	role?: string
-): Promise<GlobalSearchResult[]> {
+async function searchPatients(q: string, role?: string): Promise<GlobalSearchResult[]> {
 	const hrefFor = (id: string) => getPatientRecordHref(id, role);
-
-	if (isDemo) {
-		return MOCK_PATIENTS.filter(
-			(p) =>
-				matchesQuery(p.name, q) ||
-				matchesQuery(p.id, q) ||
-				matchesQuery(p.mobile, q) ||
-				matchesQuery(p.patientCode, q)
-		)
-			.slice(0, 8)
-			.map((p) => ({
-				id: `patient-${p.id}`,
-				category: 'مراجع' as const,
-				title: p.name,
-				subtitle: p.patientCode,
-				href: hrefFor(p.id)
-			}));
-	}
 
 	try {
 		const filter = `(name ~ "${q}" || mobile ~ "${q}") && role = "patient"`;
@@ -222,9 +185,7 @@ async function searchPatients(
 	}
 }
 
-async function searchStaff(q: string, isDemo: boolean): Promise<GlobalSearchResult[]> {
-	if (isDemo) return [];
-
+async function searchStaff(q: string): Promise<GlobalSearchResult[]> {
 	try {
 		const filter = `(name ~ "${q}" || mobile ~ "${q}" || email ~ "${q}") && role != "patient"`;
 		const res = await pb.collection('users').getList(1, 6, { filter });
@@ -243,27 +204,8 @@ async function searchStaff(q: string, isDemo: boolean): Promise<GlobalSearchResu
 async function searchAppointments(
 	q: string,
 	role: string | undefined,
-	userId: string,
-	isDemo: boolean
+	userId: string
 ): Promise<GlobalSearchResult[]> {
-	if (isDemo) {
-		return MOCK_APPOINTMENT_LIST.filter(
-			(a) =>
-				matchesQuery(a.patientName, q) ||
-				matchesQuery(a.doctorName, q) ||
-				matchesQuery(a.patientId, q) ||
-				matchesQuery(a.phone, q)
-		)
-			.slice(0, 8)
-			.map((a) => ({
-				id: `apt-${a.id}`,
-				category: 'نوبت' as const,
-				title: a.patientName,
-				subtitle: `${a.doctorName} · ${formatFaDateTime(a.dateTime)}`,
-				href: '/dashboard/appointments'
-			}));
-	}
-
 	try {
 		let filter = `(patient.name ~ "${q}" || doctor.display_name ~ "${q}")`;
 		if (role === 'doctor') {
@@ -311,8 +253,8 @@ export async function runGlobalSearch(
 ): Promise<GlobalSearchResult[]> {
 	const q = query.trim();
 	if (q.length < 2) return [];
+	if (userId === 'demo-user') return searchNavShortcuts(role, q);
 
-	const isDemo = userId === 'demo-user';
 	const tasks: Promise<GlobalSearchResult[]>[] = [Promise.resolve(searchNavShortcuts(role, q))];
 
 	const canDoctors = role === 'admin' || role === 'secretary';
@@ -320,10 +262,10 @@ export async function runGlobalSearch(
 	const canPatients = canAccessPatientRecord(role) || canAccessSecretaryPatientDesk(role);
 	const canStaff = role === 'admin';
 
-	if (canDoctors) tasks.push(searchDoctors(q, isDemo, role));
-	if (canPatients) tasks.push(searchPatients(q, isDemo, role));
-	if (canAppointments) tasks.push(searchAppointments(q, role, userId, isDemo));
-	if (canStaff) tasks.push(searchStaff(q, isDemo));
+	if (canDoctors) tasks.push(searchDoctors(q, role));
+	if (canPatients) tasks.push(searchPatients(q, role));
+	if (canAppointments) tasks.push(searchAppointments(q, role, userId));
+	if (canStaff) tasks.push(searchStaff(q));
 
 	const groups = await Promise.all(tasks);
 	const merged = groups.flat();

@@ -1,7 +1,11 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { ArrowRight } from '@lucide/svelte';
 	import BrandLogo from '$lib/components/brand-logo.svelte';
 	import Button from '$lib/components/ui/button.svelte';
+	import SeoHead from '$lib/components/seo-head.svelte';
+	import { articleJsonLd, breadcrumbJsonLd } from '$lib/seo/schema';
+	import { absoluteUrl } from '$lib/seo/site-url';
 	import { HOOMBAN_BRAND_NAME } from '$lib/brand/logo';
 
 	let {
@@ -22,14 +26,33 @@
 
 	const article = $derived(data.article);
 	const coverUrl = $derived(data.coverUrl);
+	const slug = $derived($page.params.slug ?? '');
+	const articlePath = $derived(`/articles/${slug}`);
 </script>
 
-<svelte:head>
-	<title>{article.title} | {HOOMBAN_BRAND_NAME}</title>
-	{#if article.excerpt}
-		<meta name="description" content={article.excerpt} />
-	{/if}
-</svelte:head>
+<SeoHead
+	title={`${article.title} | ${HOOMBAN_BRAND_NAME}`}
+	description={article.excerpt}
+	path={articlePath}
+	type="article"
+	image={coverUrl || undefined}
+	jsonLd={[
+		articleJsonLd({
+			title: article.title,
+			description: article.excerpt,
+			url: absoluteUrl(articlePath),
+			datePublished: article.updated,
+			dateModified: article.updated,
+			authorName: article.authorName,
+			image: coverUrl || undefined
+		}),
+		breadcrumbJsonLd([
+			{ name: 'خانه', path: '/' },
+			{ name: 'مقالات', path: '/articles' },
+			{ name: article.title, path: articlePath }
+		])
+	]}
+/>
 
 <div class="min-h-dvh bg-white text-foreground dark:bg-background">
 	<header class="border-b border-border px-4 py-4 sm:px-6">

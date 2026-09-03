@@ -6,3 +6,4 @@ export {
 	getStatusConfig,
 	formatAdmissionDate
 } from './services/patients-data';
+export type { PatientsQuery, PatientsPageResult } from './services/patients-data';

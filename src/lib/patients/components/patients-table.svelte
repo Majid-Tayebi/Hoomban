@@ -16,21 +16,30 @@
 	let {
 		patients,
 		loading = false,
-		pageSize = 12
+		page = $bindable(1),
+		pageSize = 12,
+		totalItems = 0,
+		serverPaged = false
 	}: {
 		patients: PatientListItem[];
 		loading?: boolean;
+		page?: number;
 		pageSize?: number;
+		totalItems?: number;
+		/** When true, `patients` is already one page from the server. */
+		serverPaged?: boolean;
 	} = $props();
 
-	let page = $state(1);
-
-	const paginated = $derived.by(() => {
+	const rows = $derived.by(() => {
+		if (serverPaged) return patients;
 		const start = (page - 1) * pageSize;
 		return patients.slice(start, start + pageSize);
 	});
 
+	const total = $derived(serverPaged ? totalItems : patients.length);
+
 	$effect(() => {
+		if (serverPaged) return;
 		const maxPage = Math.max(1, Math.ceil(patients.length / pageSize));
 		if (page > maxPage) page = maxPage;
 	});
@@ -49,20 +58,20 @@
 	}
 </script>
 
-<Card class="overflow-hidden rounded-2xl border-border/60 shadow-sm">
+<Card class="overflow-hidden rounded-2xl border-border/60 shadow-sm" data-testid="patients-table">
 	<CardHeader
 		class="flex-row flex-wrap items-center justify-between gap-3 space-y-0 px-4 pb-3 pt-4 sm:px-5"
 	>
 		<div>
 			<CardTitle class="text-sm font-semibold sm:text-base">فهرست مراجعان</CardTitle>
 			<p class="mt-0.5 text-xs text-muted-foreground">
-				{loading ? 'در حال بارگذاری...' : `${patients.length.toLocaleString('fa-IR')} مراجع`}
+				{loading ? 'در حال بارگذاری...' : `${total.toLocaleString('fa-IR')} مراجع`}
 			</p>
 		</div>
 	</CardHeader>
 
 	<CardContent class="px-0 pb-0 sm:px-0">
-		{#if !loading && patients.length === 0}
+		{#if !loading && rows.length === 0}
 			<p class="px-5 py-10 text-center text-sm text-muted-foreground">مراجعی یافت نشد.</p>
 		{:else}
 			<div class="hidden md:block">
@@ -82,7 +91,7 @@
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{#each paginated as p (p.id)}
+						{#each rows as p (p.id)}
 							<TableRow
 								class="cursor-pointer transition-colors duration-200 hover:bg-muted/40"
 								onclick={() => openPatient(p.id)}
@@ -107,7 +116,7 @@
 
 			<div class="md:hidden">
 				<div class="divide-y divide-border/60 px-3">
-					{#each paginated as p (p.id)}
+					{#each rows as p (p.id)}
 						<button
 							type="button"
 							class="flex w-full flex-col gap-1 py-3 text-right transition-colors duration-200 hover:bg-muted/30 active:bg-muted/50"
@@ -124,7 +133,7 @@
 				</div>
 			</div>
 
-			<TablePagination bind:page {pageSize} total={patients.length} />
+			<TablePagination bind:page {pageSize} {total} />
 		{/if}
 	</CardContent>
 </Card>

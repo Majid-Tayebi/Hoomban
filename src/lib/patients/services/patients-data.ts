@@ -7,13 +7,29 @@ import type {
 	PatientListItem,
 	PatientsPageData
 } from '../types';
-import { MOCK_PATIENTS } from '../data/mock-data';
 import { formatPatientCodeFromUser } from '../patient-code';
+import { escapeFilterValue } from '$lib/pocketbase-filter';
 
 type PatientsUser = NonNullable<AuthUser>;
 
+export type PatientsQuery = {
+	page?: number;
+	pageSize?: number;
+	query?: string;
+};
+
+export type PatientsPageResult = PatientsPageData & {
+	totalItems: number;
+	page: number;
+	pageSize: number;
+};
+
 function clientDisplayName(name: string): string {
 	return name.replaceAll('بیمار', 'مراجع').trim() || 'مراجع';
+}
+
+function escapeFilter(value: string): string {
+	return escapeFilterValue(value);
 }
 
 function inferGender(name: string): PatientGender {
@@ -32,7 +48,7 @@ async function loadPatientDoctorMap(): Promise<
 > {
 	const map = new Map<string, { doctorName: string; specialty: string; date: Date | null }>();
 	try {
-		const apts = await pb.collection('appointments').getList(1, 500, {
+		const apts = await pb.collection('appointments').getList(1, 100, {
 			expand: 'patient,doctor,doctor.user',
 			sort: '-date_time'
 		});
@@ -57,93 +73,167 @@ async function loadPatientDoctorMap(): Promise<
 			});
 		}
 	} catch {
-		/* optional */
+		/* optional enrichment */
 	}
 	return map;
 }
 
-async function fetchPatients(user: PatientsUser): Promise<PatientListItem[]> {
-	if (user.id === 'demo-user') return MOCK_PATIENTS;
+function toPatientItem(
+	u: { id: string; name?: string; mobile?: string; created?: string },
+	i: number,
+	doc?: { doctorName: string; specialty: string; date: Date | null }
+): PatientListItem {
+	const name = clientDisplayName(String(u.name || 'مراجع'));
+	return {
+		id: u.id,
+		name,
+		patientCode: formatPatientCodeFromUser(u.id, u.created ? String(u.created) : null, i),
+		mobile: String(u.mobile || '—'),
+		gender: inferGender(name),
+		condition: '—',
+		doctorName: doc?.doctorName || '—',
+		specialty: doc?.specialty || '—',
+		admissionDate: doc?.date || (u.created ? new Date(String(u.created)) : null),
+		status: 'in_treatment' as PatientCareStatus
+	};
+}
+
+async function fetchDoctorPatients(
+	user: PatientsUser,
+	query: string
+): Promise<{ patients: PatientListItem[]; totalItems: number }> {
+	const docList = await pb.collection('doctors').getList(1, 1, {
+		filter: `user = "${escapeFilter(user.id)}"`
+	});
+	if (!docList.items.length) {
+		return { patients: [], totalItems: 0 };
+	}
+
+	const doctorId = docList.items[0].id;
+		const apts = await pb.collection('appointments').getList(1, 100, {
+			filter: `doctor = "${escapeFilter(doctorId)}"`,
+			expand: 'patient,doctor,doctor.user',
+			sort: '-date_time'
+		});
+
+	const map = new Map<string, PatientListItem>();
+	let i = 0;
+	for (const a of apts.items) {
+		const exp = a.expand as {
+			patient?: { id: string; name?: string; mobile?: string; created?: string };
+			doctor?: { display_name?: string; specialty?: string; expand?: { user?: { name?: string } } };
+		};
+		const p = exp.patient;
+		if (!p || map.has(p.id)) continue;
+		const name = clientDisplayName(String(p.name || 'مراجع'));
+		map.set(p.id, {
+			id: p.id,
+			name,
+			patientCode: formatPatientCodeFromUser(p.id, a.date_time ? String(a.date_time) : null, i),
+			mobile: String(p.mobile || '—'),
+			gender: inferGender(name),
+			condition: 'مشاوره',
+			doctorName: exp.doctor?.display_name || exp.doctor?.expand?.user?.name || 'روانشناس',
+			specialty: exp.doctor?.specialty || 'روانشناسی',
+			admissionDate: a.date_time ? new Date(String(a.date_time)) : null,
+			status: mapStatus(i)
+		});
+		i += 1;
+	}
+
+	let list = [...map.values()];
+	const q = query.trim();
+	if (q) {
+		list = list.filter(
+			(p) =>
+				p.name.includes(q) ||
+				p.mobile.includes(q) ||
+				p.patientCode.includes(q) ||
+				p.doctorName.includes(q)
+		);
+	}
+	return { patients: list, totalItems: list.length };
+}
+
+async function fetchAdminPatients(
+	page: number,
+	pageSize: number,
+	query: string
+): Promise<{ patients: PatientListItem[]; totalItems: number }> {
+	const q = query.trim();
+	const filterParts = ['role = "patient"'];
+	if (q) {
+		const safe = escapeFilter(q);
+		filterParts.push(`(name ~ "${safe}" || mobile ~ "${safe}")`);
+	}
+
+	const res = await pb.collection('users').getList(page, pageSize, {
+		filter: filterParts.join(' && '),
+		sort: '-created'
+	});
+
+	const doctorByPatient = await loadPatientDoctorMap();
+	const offset = (page - 1) * pageSize;
+
+	return {
+		patients: res.items.map((u, i) =>
+			toPatientItem(
+				u as { id: string; name?: string; mobile?: string; created?: string },
+				offset + i,
+				doctorByPatient.get(u.id)
+			)
+		),
+		totalItems: res.totalItems
+	};
+}
+
+async function fetchPatients(
+	user: PatientsUser,
+	opts: PatientsQuery = {}
+): Promise<{ patients: PatientListItem[]; totalItems: number; page: number; pageSize: number }> {
+	const page = Math.max(1, opts.page ?? 1);
+	const pageSize = Math.min(100, Math.max(1, opts.pageSize ?? 12));
+	const query = opts.query ?? '';
+
+	if (user.id === 'demo-user') {
+		return { patients: [], totalItems: 0, page, pageSize };
+	}
 
 	try {
 		if (user.role === 'doctor') {
-			const docList = await pb.collection('doctors').getList(1, 1, {
-				filter: `user = "${user.id}"`
-			});
-			if (!docList.items.length) return MOCK_PATIENTS;
-
-			const doctorId = docList.items[0].id;
-			const apts = await pb.collection('appointments').getList(1, 200, {
-				filter: `doctor = "${doctorId}"`,
-				expand: 'patient,doctor,doctor.user',
-				sort: '-date_time'
-			});
-
-			const map = new Map<string, PatientListItem>();
-			let i = 0;
-			for (const a of apts.items) {
-				const exp = a.expand as {
-					patient?: { id: string; name?: string; mobile?: string };
-					doctor?: { display_name?: string; specialty?: string; expand?: { user?: { name?: string } } };
-				};
-				const p = exp.patient;
-				if (!p || map.has(p.id)) continue;
-				const name = clientDisplayName(String(p.name || 'مراجع'));
-				map.set(p.id, {
-					id: p.id,
-					name,
-					patientCode: formatPatientCodeFromUser(p.id, a.date_time ? String(a.date_time) : null, i),
-					mobile: String(p.mobile || '—'),
-					gender: inferGender(name),
-					condition: 'مشاوره',
-					doctorName: exp.doctor?.display_name || exp.doctor?.expand?.user?.name || 'روانشناس',
-					specialty: exp.doctor?.specialty || 'روانشناسی',
-					admissionDate: a.date_time ? new Date(String(a.date_time)) : null,
-					status: mapStatus(i)
-				});
-				i += 1;
-			}
-
-			const list = [...map.values()];
-			return list.length ? list : MOCK_PATIENTS;
+			const result = await fetchDoctorPatients(user, query);
+			const start = (page - 1) * pageSize;
+			return {
+				patients: result.patients.slice(start, start + pageSize),
+				totalItems: result.totalItems,
+				page,
+				pageSize
+			};
 		}
 
-		const res = await pb.collection('users').getList(1, 500, {
-			filter: 'role = "patient"',
-			sort: '-created'
-		});
-
-		if (!res.items.length) return MOCK_PATIENTS;
-
-		const doctorByPatient = await loadPatientDoctorMap();
-
-		return res.items.map((u, i) => {
-			const name = clientDisplayName(String(u.name || 'مراجع'));
-			const doc = doctorByPatient.get(u.id);
-			return {
-				id: u.id,
-				name,
-				patientCode: formatPatientCodeFromUser(u.id, u.created ? String(u.created) : null, i),
-				mobile: String(u.mobile || '—'),
-				gender: inferGender(name),
-				condition: '—',
-				doctorName: doc?.doctorName || '—',
-				specialty: doc?.specialty || '—',
-				admissionDate: doc?.date || (u.created ? new Date(String(u.created)) : null),
-				status: 'in_treatment' as PatientCareStatus
-			};
-		});
-	} catch {
-		return MOCK_PATIENTS;
+		const result = await fetchAdminPatients(page, pageSize, query);
+		return { ...result, page, pageSize };
+	} catch (err) {
+		console.error('fetchPatients failed:', err);
+		return { patients: [], totalItems: 0, page, pageSize };
 	}
 }
 
-export async function loadPatientsPageData(user: AuthUser): Promise<PatientsPageData> {
+export async function loadPatientsPageData(
+	user: AuthUser,
+	opts: PatientsQuery = {}
+): Promise<PatientsPageResult> {
 	if (!user) throw new Error('User is required');
-	const patients = await fetchPatients(user);
-	return { patients };
+	const result = await fetchPatients(user, opts);
+	return {
+		patients: result.patients,
+		totalItems: result.totalItems,
+		page: result.page,
+		pageSize: result.pageSize
+	};
 }
 
+/** Client-side filter for already-loaded rows (e.g. doctor page slice). Prefer server query. */
 export function filterPatients(patients: PatientListItem[], filters: PatientFilters): PatientListItem[] {
 	return patients.filter((p) => {
 		const q = filters.query.trim();

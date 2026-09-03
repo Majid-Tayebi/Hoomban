@@ -5,11 +5,7 @@ import type {
 	DoctorPatientRow,
 	DoctorScheduleSlot
 } from '../types';
-import {
-	MOCK_FEEDBACK,
-	MOCK_STATS,
-	buildDemoDoctorDetail
-} from '../data/mock-data';
+import { buildDemoDoctorDetail } from '../data/mock-data';
 import { formatPatientCodeFromUser } from '$lib/patients/patient-code';
 
 function formatDoctorCode(id: string): string {
@@ -93,14 +89,15 @@ export async function loadDoctorDetail(
 				};
 			});
 		} catch {
-			schedule = buildDemoDoctorDetail(doctorId).schedule;
+			schedule = [];
 		}
 
 		try {
 			const allApts = await pb.collection('appointments').getList(1, 100, {
 				filter: `doctor = "${doctorId}"`,
 				expand: 'patient',
-				sort: '-date_time'
+				sort: '-date_time',
+				fields: 'id,date_time,patient'
 			});
 
 			const map = new Map<string, DoctorPatientRow>();
@@ -125,12 +122,9 @@ export async function loadDoctorDetail(
 				i += 1;
 			}
 			patients = [...map.values()].slice(0, 10);
-			if (!patients.length) patients = buildDemoDoctorDetail(doctorId).patients;
 		} catch {
-			patients = buildDemoDoctorDetail(doctorId).patients;
+			patients = [];
 		}
-
-		const demo = buildDemoDoctorDetail(doctorId);
 
 		return {
 			profile: {
@@ -138,32 +132,38 @@ export async function loadDoctorDetail(
 				code: formatDoctorCode(doctorId),
 				displayName: name,
 				specialty: String(doc.specialty || 'روانشناسی'),
-				experience: demo.profile.experience,
+				experience: '',
 				availability: isActive ? 'available' : 'unavailable',
 				photo: doc.photo ? String(doc.photo) : undefined,
-				bio: String(doc.bio || demo.profile.bio),
-				room: demo.profile.room,
-				phone: String(exp?.user?.mobile || demo.profile.phone),
-				email: String(exp?.user?.email || demo.profile.email),
-				joinDate: demo.profile.joinDate,
-				emergencyContact: demo.profile.emergencyContact,
-				address: demo.profile.address,
+				bio: String(doc.bio || ''),
+				room: '',
+				phone: String(exp?.user?.mobile || ''),
+				email: String(exp?.user?.email || ''),
+				joinDate: '',
+				emergencyContact: '',
+				address: '',
 				visitFee: Number(doc.visit_fee || 0),
 				slotDuration
 			},
-			satisfaction: demo.satisfaction,
+			satisfaction: { percent: 0, trend: 0, count: 0 },
 			stats: [
 				{
-					...MOCK_STATS[0],
-					value: Math.max(schedule.length * 40, MOCK_STATS[0].value)
+					id: 'today',
+					label: 'نوبت امروز',
+					value: schedule.length,
+					trend: 0,
+					trendLabel: 'امروز'
 				},
 				{
-					...MOCK_STATS[1],
-					value: Math.max(patients.length * 20, MOCK_STATS[1].value)
+					id: 'patients',
+					label: 'مراجعان اخیر',
+					value: patients.length,
+					trend: 0,
+					trendLabel: 'از نوبت‌های اخیر'
 				}
 			],
-			feedback: MOCK_FEEDBACK,
-			schedule: schedule.length ? schedule : demo.schedule,
+			feedback: [],
+			schedule,
 			patients
 		};
 	} catch {

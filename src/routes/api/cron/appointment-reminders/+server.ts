@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { getAdminPb } from '$lib/server/pocketbase';
 import { runAppointmentReminders } from '$lib/server/notifications/reminder-notify';
+import { timingSafeEqualString } from '$lib/server/security/timing-safe';
 
 /** Cron endpoint: POST with header x-cron-secret matching CRON_SECRET env. */
 export const POST: RequestHandler = async ({ request }) => {
@@ -10,7 +11,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!secret) {
 		return json({ error: 'CRON_SECRET تنظیم نشده' }, { status: 503 });
 	}
-	if (request.headers.get('x-cron-secret') !== secret) {
+	const provided = request.headers.get('x-cron-secret') ?? '';
+	if (!timingSafeEqualString(provided, secret)) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 

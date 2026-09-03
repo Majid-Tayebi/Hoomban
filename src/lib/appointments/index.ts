@@ -21,5 +21,6 @@ export {
 	loadServiceAvailableSlots,
 	resolvePatientId,
 	createInPersonAppointment,
-	createServiceAppointment
+	createServiceAppointment,
+	resolveServiceBookingDoctorId
 } from './services/booking';

@@ -1,51 +1,44 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
-	import { getUser } from '$lib/auth.svelte';
-	import { loginRedirectUrl } from '$lib/auth-redirect';
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/ui/button.svelte';
-	import Card from '$lib/components/ui/card.svelte';
-	import CardHeader from '$lib/components/ui/card-header.svelte';
-	import CardTitle from '$lib/components/ui/card-title.svelte';
-	import CardContent from '$lib/components/ui/card-content.svelte';
 	import NeoResultPanel from '$lib/tests/components/neo-result-panel.svelte';
+	import GenericResultPanel from '$lib/tests/components/generic-result-panel.svelte';
 	import { buildNeoInterpretation } from '$lib/psych/neo-240/interpret';
 	import { isNeoScores } from '$lib/psych/neo-240/score';
 	import { parsePsychJsonField } from '$lib/psych/parse-json-field';
-	import { onDestroy } from 'svelte';
-	import type { Chart as ChartJs } from 'chart.js';
+	import PsychResultPdfPreviewDialog from '$lib/tests/components/psych-result-pdf-preview-dialog.svelte';
+	import SeoHead from '$lib/components/seo-head.svelte';
+	import { Eye } from '@lucide/svelte';
 
-	let id = $derived($page.params.id ?? '');
-	let user = $derived(getUser());
-	let result = $state<{
-		interpretation_text: string;
-		scores_json: unknown;
-		answers_json: unknown;
-	} | null>(null);
-	let test = $state<{ title: string } | null>(null);
-	let isLoading = $state(true);
-	let error = $state('');
-	let chart: ChartJs | null = null;
-	let canvasElement = $state<HTMLCanvasElement | null>(null);
-	let ChartCtor = $state<typeof ChartJs | null>(null);
+	let {
+		data
+	}: {
+		data: {
+			result: {
+				interpretation_text: string;
+				scores_json: unknown;
+				test: { title: string };
+				participant: { name: string; mobile: string; email: string };
+				created: string;
+			};
+		};
+	} = $props();
 
-	const parsedScores = $derived(result ? parsePsychJsonField<unknown>(result.scores_json) : null);
+	const result = $derived(data.result);
+	const test = $derived(result.test);
+	const participant = $derived({
+		...result.participant,
+		testedAt: result.created
+	});
+	let pdfPreviewOpen = $state(false);
+
+	function printResult() {
+		window.print();
+	}
+
+	const parsedScores = $derived(parsePsychJsonField<unknown>(result.scores_json));
 	const isNeo = $derived(parsedScores !== null && isNeoScores(parsedScores));
-	const neoAnswers = $derived(
-		result
-			? parsePsychJsonField<
-					{
-						order: number;
-						question_text: string;
-						selected_option: string;
-						facet_key?: string;
-					}[]
-				>(result.answers_json)
-			: []
-	);
 	const interpretationText = $derived.by(() => {
-		if (!result) return '';
 		const saved = String(result.interpretation_text || '').trim();
 		if (saved) return saved;
 		if (isNeo && parsedScores && isNeoScores(parsedScores)) {
@@ -53,171 +46,74 @@
 		}
 		return '';
 	});
-
-	async function loadResult() {
-		if (!id) return;
-		if (!user) {
-			goto(loginRedirectUrl(`/tests/result/${id}`));
-			return;
-		}
-		isLoading = true;
-		error = '';
-		try {
-			const resultData = await pb.collection('psych_results').getOne(id, {
-				expand: 'test,user',
-				...PB_NO_AUTO_CANCEL
-			});
-			result = {
-				interpretation_text: String(resultData.interpretation_text || ''),
-				scores_json: resultData.scores_json,
-				answers_json: resultData.answers_json
-			};
-			test = resultData.expand?.test ? { title: resultData.expand.test.title } : { title: 'نتیجه تست' };
-		} catch (err: unknown) {
-			const e = err as { message?: string };
-			error = 'خطا در بارگذاری نتیجه: ' + (e.message || 'نتیجه یافت نشد');
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	async function createChart() {
-		if (!canvasElement || !result || isNeo) return;
-
-		if (!ChartCtor) {
-			const mod = await import('chart.js/auto');
-			ChartCtor = mod.default;
-		}
-
-		const scores = parsePsychJsonField<Record<string, number>>(result.scores_json);
-		const labels = Object.keys(scores);
-		const data = Object.values(scores).map(Number);
-
-		if (chart) chart.destroy();
-
-		chart = new ChartCtor(canvasElement, {
-			type: 'radar',
-			data: {
-				labels,
-				datasets: [
-					{
-						label: 'امتیازات',
-						data,
-						backgroundColor: 'hsla(152, 48%, 20%, 0.15)',
-						borderColor: 'hsl(152, 48%, 20%)',
-						borderWidth: 2,
-						pointBackgroundColor: 'hsl(152, 48%, 20%)',
-						pointBorderColor: '#fff'
-					}
-				]
-			},
-			options: {
-				responsive: true,
-				maintainAspectRatio: true,
-				scales: {
-					r: {
-						beginAtZero: true,
-						ticks: { display: false },
-						pointLabels: { font: { family: 'Vazirmatn', size: 11 } }
-					}
-				},
-				plugins: { legend: { display: false } }
-			}
-		});
-	}
-
-	$effect(() => {
-		if (id) void loadResult();
-	});
-
-	$effect(() => {
-		if (result && canvasElement && !isNeo) {
-			void createChart();
-		}
-	});
-
-	onDestroy(() => {
-		chart?.destroy();
-	});
 </script>
 
-{#if isLoading}
-	<p class="py-16 text-center text-sm text-muted-foreground">در حال بارگذاری نتیجه...</p>
-{:else if error}
-	<Card class="rounded-2xl shadow-sm">
-		<CardHeader class="px-4 pt-4 sm:px-6">
-			<CardTitle class="text-base">خطا</CardTitle>
-		</CardHeader>
-		<CardContent class="space-y-4 px-4 pb-4 sm:px-6">
-			<p class="text-sm text-destructive">{error}</p>
-			<Button class="h-11 w-full rounded-xl" onclick={() => goto('/tests')}>بازگشت</Button>
-		</CardContent>
-	</Card>
-{:else if result && test && isNeo && parsedScores && isNeoScores(parsedScores)}
+<SeoHead title={`نتیجه ${test.title}`} description="نتیجه آزمون روان‌شناختی" path="/tests" noindex={true} />
+
+{#if isNeo && parsedScores && isNeoScores(parsedScores)}
 	<div class="space-y-4">
 		<NeoResultPanel
 			testTitle={test.title}
 			scores={parsedScores}
-			answers={neoAnswers}
 			interpretationText={interpretationText}
+			participantName={participant.name}
+			participantMobile={participant.mobile}
+			participantEmail={participant.email}
+			testedAt={participant.testedAt}
 		/>
-		<div class="mx-auto grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-2">
-			<Button class="h-11 rounded-xl" onclick={() => window.print()}>چاپ / PDF</Button>
+		<div class="mx-auto grid max-w-3xl grid-cols-1 gap-2 print:hidden sm:grid-cols-2">
+			<Button variant="outline" class="h-11 rounded-xl" onclick={() => (pdfPreviewOpen = true)}>
+				<Eye class="ms-1 h-4 w-4" />
+				پیش‌نمایش PDF
+			</Button>
 			<Button variant="outline" class="h-11 rounded-xl" onclick={() => goto('/tests')}>
 				بازگشت به تست‌ها
 			</Button>
 		</div>
+		<PsychResultPdfPreviewDialog bind:open={pdfPreviewOpen} onPrint={printResult}>
+			<NeoResultPanel
+				preview
+				testTitle={test.title}
+				scores={parsedScores}
+				interpretationText={interpretationText}
+				participantName={participant.name}
+				participantMobile={participant.mobile}
+				participantEmail={participant.email}
+				testedAt={participant.testedAt}
+			/>
+		</PsychResultPdfPreviewDialog>
 	</div>
-{:else if result && test}
-	<div class="mx-auto max-w-2xl space-y-4">
-		<div>
-			<h1 class="text-xl font-bold sm:text-2xl">{test.title}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">نتیجه تست شما</p>
-		</div>
-
-		<Card class="rounded-2xl shadow-sm">
-			<CardHeader class="px-4 pt-4 sm:px-6">
-				<CardTitle class="text-base">تحلیل و تفسیر نتیجه</CardTitle>
-			</CardHeader>
-			<CardContent class="px-4 pb-4 sm:px-6">
-				{#if interpretationText}
-					<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{interpretationText}</pre>
-				{:else}
-					<p class="text-sm text-muted-foreground">تفسیر برای این نتیجه ثبت نشده است.</p>
-				{/if}
-			</CardContent>
-		</Card>
-
-		<Card class="rounded-2xl shadow-sm">
-			<CardHeader class="px-4 pt-4 sm:px-6">
-				<CardTitle class="text-base">نمودار امتیازات</CardTitle>
-			</CardHeader>
-			<CardContent class="flex justify-center px-4 pb-4 sm:px-6">
-				<div class="w-full max-w-sm">
-					<canvas bind:this={canvasElement}></canvas>
-				</div>
-			</CardContent>
-		</Card>
-
-		<Card class="rounded-2xl shadow-sm">
-			<CardHeader class="px-4 pt-4 sm:px-6">
-				<CardTitle class="text-base">پاسخ‌های شما</CardTitle>
-			</CardHeader>
-			<CardContent class="space-y-2.5 px-4 pb-4 sm:px-6">
-				{#each parsePsychJsonField<{ question_text: string; selected_option: string }[]>(result.answers_json) as answer, i (i)}
-					<div class="rounded-xl border p-3.5">
-						<p class="text-sm font-medium">{answer.question_text}</p>
-						<p class="mt-1 text-xs text-muted-foreground">پاسخ: {answer.selected_option}</p>
-					</div>
-				{/each}
-			</CardContent>
-		</Card>
-
-		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-			<Button class="h-11 rounded-xl" onclick={() => window.print()}>چاپ / PDF</Button>
+{:else}
+	<div class="space-y-4">
+		<GenericResultPanel
+			testTitle={test.title}
+			interpretationText={interpretationText}
+			scoresJson={result.scores_json}
+			participantName={participant.name}
+			participantMobile={participant.mobile}
+			participantEmail={participant.email}
+			testedAt={participant.testedAt}
+		/>
+		<div class="mx-auto grid max-w-2xl grid-cols-1 gap-2 print:hidden sm:grid-cols-2">
+			<Button variant="outline" class="h-11 rounded-xl" onclick={() => (pdfPreviewOpen = true)}>
+				<Eye class="ms-1 h-4 w-4" />
+				پیش‌نمایش PDF
+			</Button>
 			<Button variant="outline" class="h-11 rounded-xl" onclick={() => goto('/tests')}>
 				بازگشت به تست‌ها
 			</Button>
 		</div>
+		<PsychResultPdfPreviewDialog bind:open={pdfPreviewOpen} onPrint={printResult}>
+			<GenericResultPanel
+				preview
+				testTitle={test.title}
+				interpretationText={interpretationText}
+				scoresJson={result.scores_json}
+				participantName={participant.name}
+				participantMobile={participant.mobile}
+				participantEmail={participant.email}
+				testedAt={participant.testedAt}
+			/>
+		</PsychResultPdfPreviewDialog>
 	</div>
 {/if}

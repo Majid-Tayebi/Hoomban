@@ -45,7 +45,8 @@ function expectedFee(
 async function loadServicePrices(): Promise<Map<string, number>> {
 	try {
 		const res = await pb.collection('services').getList(1, 100, {
-			filter: 'is_active = true'
+			filter: 'is_active = true',
+			fields: 'id,title,price'
 		});
 		return new Map(
 			res.items.map((s) => [String(s.title || '').trim(), Number(s.price || 0)])
@@ -114,8 +115,9 @@ async function fetchTransactions(options?: {
 		? `patient = "${options.patientUserId}"`
 		: 'patient != ""';
 
-	const res = await pb.collection('transactions').getList(1, options?.limit ?? 500, {
+	const res = await pb.collection('transactions').getList(1, options?.limit ?? 100, {
 		filter,
+		fields: 'id,patient,appointment,expected_amount,paid_amount,waived_amount,status,method,paid_at,created,title,notes',
 		...txReadOptions
 	});
 
@@ -364,27 +366,35 @@ function buildDemoAccounting(): PatientDeskAccounting {
 /** Sum recorded payments, optionally limited to a date range (uses paid_at, then created). */
 export async function fetchPaymentsTotal(range?: { from: Date; to: Date }): Promise<number> {
 	try {
-		const items = await pb.collection('transactions').getFullList({
-			filter: 'paid_amount > 0',
-			fields: 'paid_amount,paid_at,created,status',
-			...txReadOptions
-		});
+		const filters = ['paid_amount > 0', 'status != "waived"'];
+		if (range) {
+			const from = range.from.toISOString();
+			const to = range.to.toISOString();
+			filters.push(
+				`((paid_at != "" && paid_at >= "${from}" && paid_at < "${to}") || ((paid_at = "" || paid_at = null) && created >= "${from}" && created < "${to}"))`
+			);
+		}
 
-		return items.reduce((sum, tx) => {
-			if (String(tx.status) === 'waived') return sum;
-			const paid = Number(tx.paid_amount || 0);
-			if (paid <= 0) return sum;
+		const filter = filters.join(' && ');
+		let sum = 0;
+		let page = 1;
+		const perPage = 200;
+		const maxPages = range ? 10 : 5;
 
-			if (range) {
-				const raw = tx.paid_at || tx.created;
-				if (!raw) return sum;
-				const at = new Date(String(raw));
-				if (Number.isNaN(at.getTime())) return sum;
-				if (at < range.from || at >= range.to) return sum;
+		while (page <= maxPages) {
+			const res = await pb.collection('transactions').getList(page, perPage, {
+				filter,
+				fields: 'paid_amount',
+				...txReadOptions
+			});
+			for (const tx of res.items) {
+				sum += Number(tx.paid_amount || 0);
 			}
+			if (page >= res.totalPages) break;
+			page += 1;
+		}
 
-			return sum + paid;
-		}, 0);
+		return sum;
 	} catch {
 		return 0;
 	}
@@ -394,7 +404,7 @@ export async function loadDeskAccountingOverview(): Promise<
 	import('../types').DeskAccountingOverview
 > {
 	const [aptRes, servicePrices] = await Promise.all([
-		pb.collection('appointments').getList(1, 200, {
+		pb.collection('appointments').getList(1, 120, {
 			filter: 'status != "cancelled"',
 			expand: 'patient,doctor,doctor.user',
 			sort: '-date_time',
@@ -405,7 +415,7 @@ export async function loadDeskAccountingOverview(): Promise<
 
 	let txItems: Record<string, unknown>[] = [];
 	try {
-		txItems = await fetchTransactions({ limit: 500 });
+		txItems = await fetchTransactions({ limit: 200 });
 	} catch {
 		txItems = [];
 	}

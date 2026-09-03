@@ -79,6 +79,7 @@ export async function loadMessageThreads(user: MessagesUser): Promise<MessageThr
 		const result = await pb.collection('internal_messages').getList(1, 100, {
 			filter: `sender = "${user.id}" || recipient = "${user.id}"`,
 			expand: 'sender,recipient',
+			sort: '-created',
 			...PB_NO_AUTO_CANCEL
 		});
 

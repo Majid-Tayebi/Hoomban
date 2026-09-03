@@ -16,6 +16,7 @@
 		loadBookingDoctors,
 		loadBookingServices,
 		resolvePatientId,
+		resolveServiceBookingDoctorId,
 		slotToIsoDateTime,
 		validateMobile
 	} from '../services/booking';
@@ -29,14 +30,15 @@
 	import ServicePickList from './service-pick-list.svelte';
 	import BookingDatetimePanel from './booking-datetime-panel.svelte';
 	import BookingServiceDatetimePanel from './booking-service-datetime-panel.svelte';
+	import BookingConfirmSummary from './booking-confirm-summary.svelte';
 	import Button from '$lib/components/ui/button.svelte';
 	import Input from '$lib/components/ui/input.svelte';
 	import Label from '$lib/components/ui/label.svelte';
 	import { formatFaDate } from '$lib/date';
-	import { formatToman } from '$lib/money';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { cn } from '$lib/utils';
-	import { CreditCard, Stethoscope, Tag, ArrowRight } from '@lucide/svelte';
+	import { Stethoscope, Tag, ArrowRight } from '@lucide/svelte';
 
 	let {
 		user,
@@ -242,7 +244,7 @@
 			onCancel?.();
 			return;
 		}
-		goto('/dashboard');
+		goto(resolve('/dashboard'));
 	}
 
 	async function confirmBooking() {
@@ -258,7 +260,7 @@
 				if (variant === 'modal') {
 					setTimeout(() => onSuccess?.(), 1200);
 				} else {
-					setTimeout(() => goto('/dashboard'), 1400);
+					setTimeout(() => goto(resolve('/dashboard')), 1400);
 				}
 				return;
 			}
@@ -272,15 +274,29 @@
 				patientId = await resolvePatientId(client);
 			}
 
-			if (shouldPayOnline && selectedDoctor) {
-				const { paymentUrl } = await startAppointmentOnlineCheckout({
-					patientId,
-					doctorId: selectedDoctor.id,
-					dateTime: slotToIsoDateTime(selectedSlot),
-					type: 'in_person'
-				});
-				window.location.href = paymentUrl;
-				return;
+			if (shouldPayOnline) {
+				if (isServiceBooking && selectedService) {
+					const doctorId = await resolveServiceBookingDoctorId();
+					const { paymentUrl } = await startAppointmentOnlineCheckout({
+						patientId,
+						doctorId,
+						dateTime: slotToIsoDateTime(selectedSlot),
+						type: 'service',
+						serviceId: selectedService.id
+					});
+					window.location.href = paymentUrl;
+					return;
+				}
+				if (selectedDoctor) {
+					const { paymentUrl } = await startAppointmentOnlineCheckout({
+						patientId,
+						doctorId: selectedDoctor.id,
+						dateTime: slotToIsoDateTime(selectedSlot),
+						type: 'in_person'
+					});
+					window.location.href = paymentUrl;
+					return;
+				}
 			}
 
 			if (isServiceBooking && selectedService) {
@@ -302,7 +318,7 @@
 			if (variant === 'modal') {
 				setTimeout(() => onSuccess?.(), 900);
 			} else {
-				setTimeout(() => goto('/dashboard/appointments'), 1400);
+				setTimeout(() => goto(resolve('/dashboard/appointments')), 1400);
 			}
 		} catch (e: unknown) {
 			message = e instanceof Error ? e.message : 'خطا در رزرو نوبت';
@@ -332,7 +348,7 @@
 	});
 </script>
 
-<div class={cn(variant === 'page' && 'rounded-2xl border border-border/60 bg-card shadow-sm')}>
+<div class={cn(variant === 'page' && 'rounded-2xl border border-border/60 bg-card shadow-sm')} data-testid="booking-wizard">
 <div
 	class={cn(
 		'grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)]',
@@ -490,70 +506,19 @@
 							/>
 						{/if}
 					{:else}
-						<div class="space-y-3">
-							<div class="rounded-xl border border-border/60 p-3.5">
-								<p class="text-xs text-muted-foreground">مراجع</p>
-								<p class="mt-0.5 text-sm font-medium">{clientLabel}</p>
-								{#if deskMode}
-									<p class="mt-0.5 text-xs text-muted-foreground" dir="ltr">{client.mobile}</p>
-								{/if}
-							</div>
-							{#if isServiceBooking && selectedService}
-								<div class="rounded-xl border border-border/60 p-3.5">
-									<p class="text-xs text-muted-foreground">خدمت</p>
-									<p class="mt-0.5 text-sm font-medium">{selectedService.title}</p>
-									{#if selectedService.category}
-										<p class="text-xs text-muted-foreground">{selectedService.category}</p>
-									{/if}
-									{#if selectedService.price > 0}
-										<p class="mt-1 text-xs tabular-nums text-muted-foreground">
-											{formatToman(selectedService.price)}
-										</p>
-									{/if}
-								</div>
-							{:else if selectedDoctor}
-								<div class="rounded-xl border border-border/60 p-3.5">
-									<p class="text-xs text-muted-foreground">متخصص</p>
-									<p class="mt-0.5 text-sm font-medium">{selectedDoctor.name}</p>
-									<p class="text-xs text-muted-foreground">{selectedDoctor.specialty}</p>
-									{#if selectedDoctor.visitFee > 0}
-										<p class="mt-1 text-xs tabular-nums text-muted-foreground">
-											حق ویزیت: {formatToman(selectedDoctor.visitFee)}
-										</p>
-									{/if}
-								</div>
-							{/if}
-							{#if bookingAmountToman > 0}
-								<div class="rounded-xl border border-border/60 p-3.5">
-									<p class="text-xs text-muted-foreground">مبلغ قابل پرداخت</p>
-									<p class="mt-0.5 text-sm font-semibold tabular-nums">
-										{formatToman(bookingAmountToman)}
-									</p>
-									{#if shouldPayOnline}
-										<p class="mt-1 inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
-											<CreditCard class="h-3.5 w-3.5" aria-hidden="true" />
-											پرداخت آنلاین از طریق زرین‌پال
-											{#if gatewayStatus?.sandbox}
-												<span class="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-													سندباکس
-												</span>
-											{/if}
-										</p>
-									{:else if !deskMode}
-										<p class="mt-1 text-xs text-muted-foreground">
-											پس از رزرو، پرداخت در مطب انجام می‌شود.
-										</p>
-									{/if}
-								</div>
-							{/if}
-							<div class="rounded-xl border border-border/60 p-3.5">
-								<p class="text-xs text-muted-foreground">زمان</p>
-								<p class="mt-0.5 text-sm font-medium">
-									{formatFaDate(selectedDate)} — {selectedSlot?.time}
-								</p>
-								<p class="text-xs text-muted-foreground">حضوری</p>
-							</div>
-						</div>
+						<BookingConfirmSummary
+							{clientLabel}
+							clientMobile={client.mobile}
+							{deskMode}
+							{selectedDoctor}
+							{selectedService}
+							{isServiceBooking}
+							{selectedDate}
+							{selectedSlot}
+							{bookingAmountToman}
+							{shouldPayOnline}
+							{gatewayStatus}
+						/>
 					{/if}
 
 					{#if message}

@@ -7,8 +7,10 @@
 </script>
 
 <div class="min-h-dvh bg-background text-foreground">
-	<LandingNavbar {user} />
-	<main class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+	<div class="print:hidden">
+		<LandingNavbar {user} />
+	</div>
+	<main class="mx-auto w-full max-w-6xl px-4 py-6 print:max-w-none print:px-0 print:py-0 sm:px-6 sm:py-8">
 		{@render children()}
 	</main>
 </div>

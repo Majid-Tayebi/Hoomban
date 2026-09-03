@@ -4,8 +4,8 @@ import { canManageAppointments, getAuthUserFromRequest } from '$lib/server/reque
 import { getAdminPb, PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
 import { notifyAppointmentCreated } from '$lib/server/notifications/appointment-notify';
 
-export const POST: RequestHandler = async ({ request }) => {
-	const user = await getAuthUserFromRequest(request);
+export const POST: RequestHandler = async ({ request, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) {
 		return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 	}

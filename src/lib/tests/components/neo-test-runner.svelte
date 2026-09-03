@@ -8,10 +8,7 @@
 	import CardTitle from '$lib/components/ui/card-title.svelte';
 	import CardContent from '$lib/components/ui/card-content.svelte';
 	import { NEO_LIKERT_OPTIONS, NEO_PAGE_SIZE } from '$lib/psych/neo-240/meta';
-	import { buildNeoInterpretation } from '$lib/psych/neo-240/interpret';
-	import { scoreNeo240, type NeoAnswerInput } from '$lib/psych/neo-240/score';
 	import {
-		optionScoreAt,
 		parseQuestionOptions,
 		type NeoQuestionOption
 	} from '$lib/psych/neo-240/option-scores';
@@ -21,6 +18,7 @@
 		type NeoScoringConfig
 	} from '$lib/psych/neo-240/scoring-config';
 	import { loginRedirectUrl } from '$lib/auth-redirect';
+	import { getErrorMessage } from '$lib/errors';
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
 
 	type NeoQuestion = {
@@ -105,7 +103,7 @@
 			}));
 			restoreDraft();
 		} catch (err: unknown) {
-			error = err instanceof Error ? err.message : 'خطا در بارگذاری سوالات';
+			error = getErrorMessage(err, 'خطا در بارگذاری سوالات');
 		} finally {
 			isLoading = false;
 		}
@@ -163,46 +161,23 @@
 		isSubmitting = true;
 		error = '';
 		try {
-			const answerInputs: NeoAnswerInput[] = [];
-			const answersJson = questions.map((q) => {
-				const selectedIndex = answers[q.order] ?? 0;
-				const selected = likertOptions[selectedIndex] ?? NEO_LIKERT_OPTIONS[selectedIndex];
-				const scorePoints = optionScoreAt(q.options_json, selectedIndex);
-				answerInputs.push({
-					order: q.order,
-					selected_index: selectedIndex,
-					domain_key: q.domain_key as NeoAnswerInput['domain_key'],
-					facet_key: q.facet_key as NeoAnswerInput['facet_key'],
-					score_points: scorePoints,
-					question_text: q.question_text
-				});
-				return {
-					question_id: q.id,
-					order: q.order,
-					question_text: q.question_text,
-					facet_key: q.facet_key,
-					domain_key: q.domain_key,
-					selected_option: selected.text,
-					selected_index: selectedIndex,
-					score_points: scorePoints
-				};
+			const res = await fetch('/api/psych/neo-240/submit', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					...(pb.authStore.token ? { Authorization: `Bearer ${pb.authStore.token}` } : {})
+				},
+				body: JSON.stringify({ testId, answers })
 			});
-
-			const scores = scoreNeo240(answerInputs, scoringConfig);
-			const interpretation = buildNeoInterpretation(scores);
-
-			const result = await pb.collection('psych_results').create({
-				user: user.id,
-				test: testId,
-				answers_json: JSON.stringify(answersJson),
-				scores_json: JSON.stringify(scores),
-				interpretation_text: interpretation
-			});
+			const data = (await res.json()) as { id?: string; error?: string };
+			if (!res.ok || !data.id) {
+				throw new Error(data.error || 'خطا در ثبت نتیجه');
+			}
 
 			if (typeof localStorage !== 'undefined') localStorage.removeItem(draftKey);
-			goto(`/tests/result/${result.id}`);
+			goto(`/tests/result/${data.id}`);
 		} catch (err: unknown) {
-			error = err instanceof Error ? err.message : 'خطا در ثبت نتیجه';
+			error = getErrorMessage(err, 'خطا در ثبت نتیجه');
 		} finally {
 			isSubmitting = false;
 		}

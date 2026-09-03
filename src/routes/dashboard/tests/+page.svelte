@@ -12,6 +12,8 @@
 	import Badge from '$lib/components/ui/badge.svelte';
 	import Input from '$lib/components/ui/input.svelte';
 	import Label from '$lib/components/ui/label.svelte';
+	import Select from '$lib/components/ui/select.svelte';
+	import { PSYCH_TEST_CATEGORIES, psychCategoryLabel } from '$lib/psych/categories';
 	import Dialog from '$lib/components/ui/dialog.svelte';
 	import { Plus, Trash2 } from '@lucide/svelte';
 
@@ -92,13 +94,7 @@
 	}
 
 	function categoryLabel(c: string) {
-		const map: Record<string, string> = {
-			personality: 'شخصیتی',
-			depression: 'افسردگی',
-			marriage: 'ازدواج',
-			kids: 'کودکان'
-		};
-		return map[c] || c;
+		return psychCategoryLabel(c);
 	}
 
 	$effect(() => {
@@ -197,16 +193,11 @@
 			</div>
 			<div class="space-y-1.5">
 				<Label for="t-cat">دسته</Label>
-				<select
-					id="t-cat"
-					class="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
-					bind:value={newTest.category}
-				>
-					<option value="personality">شخصیتی</option>
-					<option value="depression">افسردگی</option>
-					<option value="marriage">ازدواج</option>
-					<option value="kids">کودکان</option>
-				</select>
+				<Select id="t-cat" bind:value={newTest.category} class="h-11 rounded-xl">
+					{#each PSYCH_TEST_CATEGORIES as cat (cat.value)}
+						<option value={cat.value}>{cat.label}</option>
+					{/each}
+				</Select>
 			</div>
 			{#if error}
 				<p class="text-sm text-destructive">{error}</p>

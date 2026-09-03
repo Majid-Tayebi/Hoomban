@@ -36,6 +36,7 @@ export async function loadInventoryItems(user: InventoryUser): Promise<Inventory
 	try {
 		const result = await pb.collection('inventory_items').getList(1, 200, {
 			sort: 'name',
+			fields: 'id,name,sku,category,quantity,unit,min_stock,location,updated',
 			...PB_NO_AUTO_CANCEL
 		});
 		return result.items.map((row) => mapInventoryRecord(row as unknown as Record<string, unknown>));
@@ -61,6 +62,7 @@ export async function createInventoryItem(input: CreateInventoryInput): Promise<
 			'Content-Type': 'application/json',
 			...(pb.authStore.token ? { Authorization: `Bearer ${pb.authStore.token}` } : {})
 		},
+		credentials: 'include',
 		body: JSON.stringify(input)
 	});
 	const data = (await res.json()) as { item?: InventoryItem; error?: string };

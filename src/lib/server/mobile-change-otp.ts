@@ -3,6 +3,7 @@ import { generateOtpCode } from '$lib/server/auth-secrets';
 import { matchesDemoOtp } from '$lib/server/dev-auth';
 import { OTP_EXPIRY_MS, OTP_RESEND_SECONDS, normalizeOtpCode } from '$lib/otp';
 import { PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
+import { escapeFilterValue } from '$lib/pocketbase-filter';
 
 export type PendingMobileChange = {
 	code: string;
@@ -19,10 +20,6 @@ export const MOBILE_CHANGE_MAX_VERIFY_ATTEMPTS = 5;
 
 const NOT_FOUND_ERROR = 'درخواست معتبر یافت نشد؛ دوباره کد بگیرید';
 const LOCKED_ERROR = 'تعداد تلاش‌های ناموفق زیاد است؛ دوباره کد بگیرید';
-
-function escapeFilterValue(value: string): string {
-	return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
 
 function codeMatches(stored: string, submitted: string): boolean {
 	return stored === submitted || matchesDemoOtp(submitted);

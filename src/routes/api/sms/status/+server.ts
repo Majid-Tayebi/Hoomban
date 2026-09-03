@@ -13,8 +13,8 @@ import {
 import { smsirGetCredit, SmsIrError } from '$lib/server/sms/smsir-client';
 
 /** Admin-only: check SMS.ir config and credit (localhost dispatch gate respected). */
-export const GET: RequestHandler = async ({ request }) => {
-	const actor = await getAuthUserFromRequest(request);
+export const GET: RequestHandler = async ({ request, cookies }) => {
+	const actor = await getAuthUserFromRequest(request, cookies);
 	if (!actor || actor.role !== 'admin') {
 		return json({ error: 'دسترسی ندارید' }, { status: 403 });
 	}

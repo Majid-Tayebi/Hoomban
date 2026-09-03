@@ -1,9 +1,8 @@
 <script lang="ts">
-	import AppShell from '$lib/components/app-shell.svelte';
-
+	/** Public booking routes — no dashboard shell (avoids auth-hydration blocking). */
 	let { children } = $props();
 </script>
 
-<AppShell>
+<div class="min-h-dvh bg-background">
 	{@render children()}
-</AppShell>
+</div>

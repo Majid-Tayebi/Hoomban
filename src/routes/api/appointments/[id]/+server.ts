@@ -28,8 +28,8 @@ async function assertSlotAvailable(
 	}
 }
 
-export const PATCH: RequestHandler = async ({ request, params }) => {
-	const user = await getAuthUserFromRequest(request);
+export const PATCH: RequestHandler = async ({ request, params, cookies }) => {
+	const user = await getAuthUserFromRequest(request, cookies);
 	if (!user) {
 		return json({ error: 'احراز هویت لازم است' }, { status: 401 });
 	}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
+	import { getErrorMessage } from '$lib/errors';
 	import Button from '$lib/components/ui/button.svelte';
 	import Card from '$lib/components/ui/card.svelte';
 	import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -9,6 +10,9 @@
 	import Input from '$lib/components/ui/input.svelte';
 	import Label from '$lib/components/ui/label.svelte';
 	import Badge from '$lib/components/ui/badge.svelte';
+	import NeoScoringConfigPanel from '$lib/tests/components/neo-scoring-config-panel.svelte';
+	import NeoKeyImportPanel from '$lib/tests/components/neo-key-import-panel.svelte';
+	import { syncNeoPsychQuestionsApi } from '$lib/tests/services/psych-questions-api';
 	import { NEO_DOMAINS, NEO_FACETS } from '$lib/psych/neo-240/meta';
 	import {
 		DEFAULT_NEO_SCORING_CONFIG,
@@ -21,6 +25,7 @@
 		parseNeoKeyCompact,
 		parseNeoQuestionKeys
 	} from '$lib/psych/neo-240/parse-question-keys';
+	import type { NeoQuestion } from '$lib/psych/neo-240/types';
 	import {
 		applyScorePattern,
 		clampNeoScore,
@@ -31,16 +36,7 @@
 		syncOptionLabels,
 		type NeoQuestionOption
 	} from '$lib/psych/neo-240/option-scores';
-	import { ChevronLeft, ChevronRight, KeyRound, Save, Upload } from '@lucide/svelte';
-
-	type NeoQuestion = {
-		id?: string;
-		order: number;
-		question_text: string;
-		domain_key: string;
-		facet_key: string;
-		options_json: NeoQuestionOption[];
-	};
+	import { ChevronLeft, ChevronRight, Save } from '@lucide/svelte';
 
 	function likertLabels() {
 		return scoringConfig.likert.length === 5
@@ -128,7 +124,7 @@
 			});
 			questions = result.map((q) => normalizeQuestion(q, likertLabels()));
 		} catch (e: unknown) {
-			notify(e instanceof Error ? e.message : 'خطا در بارگذاری سوالات نئو');
+			notify(getErrorMessage(e, 'خطا در بارگذاری سوالات نئو'));
 		} finally {
 			loading = false;
 		}
@@ -185,50 +181,16 @@
 		if (readonly) return;
 		saving = true;
 		try {
-			await pb.collection('psych_tests').update(testId, {
-				scoring_config: scoringConfig
-			});
-
-			const existing = await pb.collection('psych_questions').getFullList({
-				filter: `test = "${testId}"`,
-				fields: 'id',
-				...PB_NO_AUTO_CANCEL
-			});
-			const keepIds = new Set(questions.map((q) => q.id).filter(Boolean));
-			for (const old of existing) {
-				if (!keepIds.has(old.id)) {
-					await pb.collection('psych_questions').delete(old.id);
-				}
-			}
-
-			for (const q of questions) {
-				const labels = likertLabels();
-				const options = syncOptionLabels(q.options_json, labels).map((opt) => ({
-					text: opt.text,
-					scores: {
-						value: clampNeoScore(opt.scores.value ?? opt.scores.score),
-						score: clampNeoScore(opt.scores.value ?? opt.scores.score)
-					}
-				}));
-				const payload = {
-					test: testId,
-					question_text: q.question_text.trim(),
-					order: q.order,
-					domain_key: q.domain_key,
-					facet_key: q.facet_key,
-					reverse_scored: isReversePattern(options),
-					options_json: options
-				};
-				if (q.id) {
-					await pb.collection('psych_questions').update(q.id, payload);
-				} else {
-					const created = await pb.collection('psych_questions').create(payload);
-					q.id = created.id;
-				}
-			}
+			await syncNeoPsychQuestionsApi(
+				pb.authStore.token,
+				testId,
+				questions,
+				scoringConfig,
+				likertLabels()
+			);
 			notify('سوالات و تنظیمات نمره‌دهی نئو ذخیره شد');
 		} catch (e: unknown) {
-			notify(e instanceof Error ? e.message : 'خطا در ذخیره — فقط نقش نویسنده مجاز است');
+			notify(getErrorMessage(e, 'خطا در ذخیره — فقط نقش نویسنده مجاز است'));
 		} finally {
 			saving = false;
 		}
@@ -249,93 +211,16 @@
 			</p>
 		{/if}
 
-		<Card class="rounded-2xl shadow-sm">
-			<CardHeader>
-				<CardTitle class="text-base">تنظیمات نمره‌دهی و گزینه‌های لیکرت</CardTitle>
-				<CardDescription>بازه‌های پایین / متوسط / بالا و متن پنج گزینه پاسخ</CardDescription>
-			</CardHeader>
-			<CardContent class="space-y-4">
-				<div class="grid gap-3 sm:grid-cols-2">
-					<div class="space-y-2 rounded-xl border p-3">
-						<p class="text-xs font-semibold">خرده‌مقیاس (۰–۳۲)</p>
-						<div class="grid grid-cols-2 gap-2">
-							<div>
-								<Label class="text-xs">پایین تا</Label>
-								<Input type="number" bind:value={scoringConfig.facetBands.lowMax} disabled={readonly} dir="ltr" />
-							</div>
-							<div>
-								<Label class="text-xs">متوسط تا</Label>
-								<Input type="number" bind:value={scoringConfig.facetBands.mediumMax} disabled={readonly} dir="ltr" />
-							</div>
-						</div>
-					</div>
-					<div class="space-y-2 rounded-xl border p-3">
-						<p class="text-xs font-semibold">عامل اصلی (۰–۱۹۲)</p>
-						<div class="grid grid-cols-2 gap-2">
-							<div>
-								<Label class="text-xs">پایین تا</Label>
-								<Input type="number" bind:value={scoringConfig.domainBands.lowMax} disabled={readonly} dir="ltr" />
-							</div>
-							<div>
-								<Label class="text-xs">متوسط تا</Label>
-								<Input type="number" bind:value={scoringConfig.domainBands.mediumMax} disabled={readonly} dir="ltr" />
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="space-y-2">
-					<p class="text-xs font-semibold">گزینه‌های لیکرت (۰ تا ۴)</p>
-					{#each scoringConfig.likert as label, i (i)}
-						<div class="flex items-center gap-2">
-							<Badge variant="outline" class="w-8 shrink-0 justify-center text-[10px]">{i}</Badge>
-							<Input bind:value={scoringConfig.likert[i]} disabled={readonly} />
-						</div>
-					{/each}
-				</div>
-			</CardContent>
-		</Card>
+		<NeoScoringConfigPanel bind:scoringConfig {readonly} />
 
-		<Card class="rounded-2xl shadow-sm">
-			<CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2">
-				<div>
-					<CardTitle class="text-base">کلید نمره‌گذاری سوالات</CardTitle>
-					<CardDescription>
-						ورود دسته‌ای خرده‌مقیاس — فرمت: شماره,خرده‌مقیاس,معکوس (مثال: 1,N1,معکوس). نمره گزینه‌ها از الگوی مستقیم/معکوس پر می‌شود.
-					</CardDescription>
-				</div>
-				{#if !readonly}
-					<Button variant="outline" size="sm" class="rounded-lg" onclick={() => (showKeyPanel = !showKeyPanel)}>
-						<KeyRound class="ms-1 h-4 w-4" />
-						{showKeyPanel ? 'بستن' : 'ورود کلید'}
-					</Button>
-				{/if}
-			</CardHeader>
-			{#if showKeyPanel || readonly}
-				<CardContent class="space-y-3">
-					<textarea
-						class="min-h-[140px] w-full rounded-xl border bg-muted/30 px-3 py-2 font-mono text-xs leading-relaxed disabled:opacity-60"
-						dir="ltr"
-						placeholder={"1,N1,معکوس\n2,E1,مستقیم\n3,O1,معکوس\n...\nیا: 1 N1 R"}
-						bind:value={keyImportText}
-						disabled={readonly}
-					></textarea>
-					{#if keyImportMessage}
-						<p class="text-xs text-muted-foreground">{keyImportMessage}</p>
-					{/if}
-					{#if !readonly}
-						<div class="flex flex-wrap gap-2">
-							<Button size="sm" class="rounded-lg" onclick={applyImportedKeys}>
-								<Upload class="ms-1 h-4 w-4" />
-								اعمال کلیدها
-							</Button>
-							<Button variant="outline" size="sm" class="rounded-lg" onclick={exportKeys}>
-								صدور کلید فعلی
-							</Button>
-						</div>
-					{/if}
-				</CardContent>
-			{/if}
-		</Card>
+		<NeoKeyImportPanel
+			bind:keyImportText
+			bind:keyImportMessage
+			bind:showKeyPanel
+			{readonly}
+			onApply={applyImportedKeys}
+			onExport={exportKeys}
+		/>
 
 		<Card class="rounded-2xl shadow-sm">
 			<CardHeader class="flex flex-row flex-wrap items-center justify-between gap-2">

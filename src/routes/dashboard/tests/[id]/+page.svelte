@@ -13,7 +13,11 @@
 	import CardDescription from '$lib/components/ui/card-description.svelte';
 	import Input from '$lib/components/ui/input.svelte';
 	import Label from '$lib/components/ui/label.svelte';
+	import Select from '$lib/components/ui/select.svelte';
+	import { PSYCH_TEST_CATEGORIES } from '$lib/psych/categories';
 	import NeoTestEditor from '$lib/tests/components/neo-test-editor.svelte';
+	import { syncGenericPsychQuestionsApi } from '$lib/tests/services/psych-questions-api';
+	import { getErrorMessage } from '$lib/errors';
 	import { ArrowRight, Plus, Trash2, Save } from '@lucide/svelte';
 
 	type Option = { text: string; scores: { score?: number; value?: number } };
@@ -89,7 +93,7 @@
 						]
 			}));
 		} catch (e: unknown) {
-			message = e instanceof Error ? e.message : 'خطا در بارگذاری';
+			message = getErrorMessage(e, 'خطا در بارگذاری');
 		} finally {
 			loading = false;
 		}
@@ -141,7 +145,7 @@
 			});
 			message = 'اطلاعات تست ذخیره شد';
 		} catch (e: unknown) {
-			message = e instanceof Error ? e.message : 'خطا در ذخیره — فقط نقش نویسنده مجاز است';
+			message = getErrorMessage(e, 'خطا در ذخیره — فقط نقش نویسنده مجاز است');
 		} finally {
 			saving = false;
 		}
@@ -154,36 +158,10 @@
 		try {
 			await saveMeta();
 
-			const existing = await pb.collection('psych_questions').getFullList({
-				filter: `test = "${testId}"`,
-				fields: 'id',
-				...PB_NO_AUTO_CANCEL
-			});
-			const keepIds = new Set(questions.map((q) => q.id).filter(Boolean));
-			for (const old of existing) {
-				if (!keepIds.has(old.id)) {
-					await pb.collection('psych_questions').delete(old.id);
-				}
-			}
-
-			for (let i = 0; i < questions.length; i++) {
-				const q = questions[i];
-				const payload = {
-					test: testId,
-					question_text: q.question_text.trim(),
-					order: i + 1,
-					options_json: q.options_json.map(normalizeOption)
-				};
-				if (q.id) {
-					await pb.collection('psych_questions').update(q.id, payload);
-				} else {
-					const created = await pb.collection('psych_questions').create(payload);
-					questions[i].id = created.id;
-				}
-			}
+			await syncGenericPsychQuestionsApi(pb.authStore.token, testId, questions);
 			message = 'تست، سوالات و روش تحلیل ذخیره شد';
 		} catch (e: unknown) {
-			message = e instanceof Error ? e.message : 'خطا در ذخیره';
+			message = getErrorMessage(e, 'خطا در ذخیره');
 		} finally {
 			saving = false;
 		}
@@ -240,11 +218,11 @@
 		{/if}
 
 		<Card class="rounded-2xl shadow-sm">
-			<CardHeader>
+			<CardHeader class="pb-3">
 				<CardTitle class="text-base">اطلاعات تست</CardTitle>
 			</CardHeader>
-			<CardContent class="grid gap-3 sm:grid-cols-2">
-				<div class="space-y-1.5 sm:col-span-2">
+			<CardContent class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				<div class="space-y-1.5 sm:col-span-2 lg:col-span-2">
 					<Label>عنوان</Label>
 					<Input bind:value={title} disabled={!canEdit} />
 				</div>
@@ -254,23 +232,27 @@
 				</div>
 				<div class="space-y-1.5">
 					<Label>دسته</Label>
-					<Input bind:value={category} disabled={!canEdit} />
+					<Select bind:value={category} disabled={!canEdit} class="h-10 rounded-xl">
+						{#each PSYCH_TEST_CATEGORIES as cat (cat.value)}
+							<option value={cat.value}>{cat.label}</option>
+						{/each}
+					</Select>
 				</div>
-				<div class="space-y-1.5 sm:col-span-2">
+				<div class="space-y-1.5 sm:col-span-2 lg:col-span-4">
 					<Label>توضیح</Label>
 					<textarea
-						class="min-h-[70px] w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
+						class="min-h-[56px] w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
 						bind:value={description}
 						disabled={!canEdit}
 					></textarea>
 				</div>
-				<label class="flex items-center gap-2 text-sm">
+				<label class="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
 					<input type="checkbox" bind:checked={isActive} disabled={!canEdit} />
 					فعال
 				</label>
 				{#if canEdit && !isNeo240}
-					<div class="sm:col-span-2">
-						<Button variant="outline" class="rounded-xl" disabled={saving} onclick={saveMeta}>
+					<div class="sm:col-span-2 lg:col-span-4">
+						<Button variant="outline" size="sm" class="rounded-lg" disabled={saving} onclick={saveMeta}>
 							ذخیره اطلاعات پایه
 						</Button>
 					</div>

@@ -28,19 +28,44 @@ export type CheckoutBookingInput = {
 	origin?: string;
 };
 
+export type ResolvedBookingAmount = {
+	amountToman: number;
+	serviceTitle?: string;
+	serviceCategory?: string;
+};
+
+/**
+ * Resolve payable amount from PocketBase only — never trust client-supplied prices.
+ * Service bookings require a real `serviceId`; in-person uses the doctor's visit_fee.
+ */
 export async function resolveBookingAmountToman(
 	pb: PocketBase,
 	params: {
 		doctorId: string;
 		type: 'in_person' | 'service';
-		servicePriceToman?: number;
+		serviceId?: string;
 	}
-): Promise<number> {
+): Promise<ResolvedBookingAmount> {
 	if (params.type === 'service') {
-		return Math.max(0, Math.round(Number(params.servicePriceToman || 0)));
+		const serviceId = String(params.serviceId ?? '').trim();
+		if (!serviceId) {
+			throw new Error('شناسه خدمت برای پرداخت الزامی است');
+		}
+		const service = await pb.collection('services').getOne(serviceId, PB_NO_AUTO_CANCEL);
+		if (service.is_active === false) {
+			throw new Error('این خدمت غیرفعال است');
+		}
+		return {
+			amountToman: Math.max(0, Math.round(Number(service.price || 0))),
+			serviceTitle: String(service.title || ''),
+			serviceCategory: service.category ? String(service.category) : undefined
+		};
 	}
+
 	const doctor = await pb.collection('doctors').getOne(params.doctorId, PB_NO_AUTO_CANCEL);
-	return Math.max(0, Math.round(Number(doctor.visit_fee || 0)));
+	return {
+		amountToman: Math.max(0, Math.round(Number(doctor.visit_fee || 0)))
+	};
 }
 
 export async function startAppointmentCheckout(
