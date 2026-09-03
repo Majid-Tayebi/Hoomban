@@ -1,4 +1,5 @@
-import { pb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
+import { pb as browserPb, PB_NO_AUTO_CANCEL } from '$lib/pocketbase';
+import type PocketBase from 'pocketbase';
 import type { AuthUser } from '$lib/auth.svelte';
 import { addDays, startOfDay, toPersianWeekdayIndex, WEEKDAYS_FA } from '$lib/date';
 import { fetchPaymentsTotal } from '$lib/desk/services/accounting';
@@ -13,6 +14,8 @@ import type {
 import { MOCK_APPOINTMENTS } from '../data/mock-data';
 import { formatPatientCodeFromUser } from '$lib/patients/patient-code';
 import { formatSlotsLabel, resolveDaySlots } from '$lib/schedule/working-schedule';
+
+let activeDashboardPb: PocketBase = browserPb;
 
 type DashboardUser = NonNullable<AuthUser>;
 
@@ -104,7 +107,7 @@ function startOfNextMonth(d: Date): Date {
 
 function doctorPhotoUrl(id: string, photo: string | undefined): string | null {
 	if (!photo) return null;
-	return pb.files.getURL({ id, collectionName: 'doctors' } as never, photo);
+	return activeDashboardPb.files.getURL({ id, collectionName: 'doctors' } as never, photo);
 }
 
 function initialsFromName(name: string): string {
@@ -131,7 +134,7 @@ function isWorkingToday(workingDays: WorkingDay[]): boolean {
 
 async function resolveDoctorId(userId: string): Promise<string | null> {
 	try {
-		const dr = await pb.collection('doctors').getList(1, 1, { filter: `user = "${userId}"` });
+		const dr = await activeDashboardPb.collection('doctors').getList(1, 1, { filter: `user = "${userId}"` });
 		return dr.items[0]?.id ?? null;
 	} catch {
 		return null;
@@ -166,7 +169,7 @@ async function fetchAppointments(
 			sort = 'date_time';
 		}
 
-		const result = await pb.collection('appointments').getList(1, limit, {
+		const result = await activeDashboardPb.collection('appointments').getList(1, limit, {
 			filter,
 			sort,
 			expand: 'patient,doctor',
@@ -182,7 +185,7 @@ async function fetchAppointments(
 
 async function countAppointments(filter: string): Promise<number> {
 	try {
-		const r = await pb.collection('appointments').getList(1, 1, { filter, ...PB_NO_AUTO_CANCEL });
+		const r = await activeDashboardPb.collection('appointments').getList(1, 1, { filter, ...PB_NO_AUTO_CANCEL });
 		return r.totalItems;
 	} catch {
 		return 0;
@@ -202,7 +205,7 @@ async function fetchTodayAppointmentCounts(): Promise<Map<string, number>> {
 	const counts = new Map<string, number>();
 
 	try {
-		const items = await pb.collection('appointments').getList(1, 200, {
+		const items = await activeDashboardPb.collection('appointments').getList(1, 200, {
 			filter: `date_time >= "${dayStart.toISOString()}" && date_time < "${dayEnd.toISOString()}" && status != "cancelled"`,
 			fields: 'id,doctor',
 			...PB_NO_AUTO_CANCEL
@@ -223,7 +226,7 @@ async function fetchTodayAppointmentCounts(): Promise<Map<string, number>> {
 async function fetchDoctors(): Promise<DoctorScheduleItem[]> {
 	try {
 		const [result, todayCounts] = await Promise.all([
-			pb.collection('doctors').getList(1, 50, {
+			activeDashboardPb.collection('doctors').getList(1, 50, {
 				filter: 'is_active = true',
 				expand: 'user',
 				sort: 'sort_order'
@@ -270,7 +273,7 @@ async function secretaryStats(): Promise<DashboardStat[]> {
 	const weekStart = addDays(dayStart, -6);
 
 	const [patients, todayApts, weekApts, monthRevenue] = await Promise.all([
-		pb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
 		countAppointments(
 			`date_time >= "${dayStart.toISOString()}" && date_time < "${dayEnd.toISOString()}" && status != "cancelled"`
 		),
@@ -319,8 +322,8 @@ async function adminClinicStats(): Promise<DashboardStat[]> {
 	const monthEndIso = monthEnd.toISOString();
 
 	const [doctors, patients, newPatients, monthRevenue, monthApts] = await Promise.all([
-		pb.collection('doctors').getList(1, 1, { filter: 'is_active = true' }).catch(() => ({ totalItems: 0 })),
-		pb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('doctors').getList(1, 1, { filter: 'is_active = true' }).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
 		pb
 			.collection('users')
 			.getList(1, 1, {
@@ -375,10 +378,10 @@ export interface ClinicOverviewStats {
 /** Shared counts for admin hub and management pages. */
 export async function fetchClinicOverviewStats(): Promise<ClinicOverviewStats> {
 	const [appointments, patients, doctors, staff, monthRevenue] = await Promise.all([
-		pb.collection('appointments').getList(1, 1).catch(() => ({ totalItems: 0 })),
-		pb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
-		pb.collection('doctors').getList(1, 1, { filter: 'is_active = true' }).catch(() => ({ totalItems: 0 })),
-		pb.collection('staff_registry').getList(1, 1).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('appointments').getList(1, 1).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('users').getList(1, 1, { filter: 'role = "patient"' }).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('doctors').getList(1, 1, { filter: 'is_active = true' }).catch(() => ({ totalItems: 0 })),
+		activeDashboardPb.collection('staff_registry').getList(1, 1).catch(() => ({ totalItems: 0 })),
 		fetchMonthRevenue()
 	]);
 
@@ -440,7 +443,7 @@ async function patientStats(userId: string): Promise<DashboardStat[]> {
 
 async function writerStats(): Promise<DashboardStat[]> {
 	try {
-		const articles = await pb.collection('articles').getList(1, 1);
+		const articles = await activeDashboardPb.collection('articles').getList(1, 1);
 		return [
 			{
 				id: 'articles',
@@ -529,8 +532,22 @@ function copyFor(role: DashboardRoleView, name: string): { greeting: string; sub
 	};
 }
 
-export async function loadDashboardData(user: AuthUser): Promise<DashboardData> {
+export async function loadDashboardData(
+	user: AuthUser,
+	client?: PocketBase
+): Promise<DashboardData> {
 	if (!user) throw new Error('User is required to load dashboard data');
+
+	const previous = activeDashboardPb;
+	if (client) activeDashboardPb = client;
+	try {
+		return await loadDashboardDataInner(user);
+	} finally {
+		if (client) activeDashboardPb = previous;
+	}
+}
+
+async function loadDashboardDataInner(user: AuthUser): Promise<DashboardData> {
 
 	const role = roleView(user.role);
 	const copy = copyFor(role, user.name ?? '');

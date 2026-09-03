@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { getUser } from '$lib/auth.svelte';
 	import { page } from '$app/stores';
 	import SeoHead from '$lib/components/seo-head.svelte';
@@ -7,6 +8,13 @@
 	let user = $derived(getUser() ?? $page.data.user);
 	let deskMode = $derived(user?.role === 'secretary' || user?.role === 'admin');
 	let initialDoctorId = $derived($page.url.searchParams.get('doctor'));
+
+	$effect(() => {
+		if (!user && typeof window !== 'undefined') {
+			const redirectTo = encodeURIComponent($page.url.pathname + $page.url.search);
+			void goto(`/auth?redirect=${redirectTo}`);
+		}
+	});
 </script>
 
 <SeoHead
@@ -15,10 +23,6 @@
 	path="/appointments/book"
 />
 
-{#if !user}
-	<p class="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
-		برای رزرو وارد شوید.
-	</p>
-{:else}
+{#if user}
 	<BookingWizard {user} {deskMode} {initialDoctorId} />
 {/if}

@@ -1,0 +1,95 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  pocketbase:
+    build:
+      context: ./pocketbase
+      args:
+        PB_VERSION: "0.27.1"
+    restart: unless-stopped
+    environment:
+      POCKETBASE_ADMIN_EMAIL: ${POCKETBASE_ADMIN_EMAIL}
+      POCKETBASE_ADMIN_PASSWORD: ${POCKETBASE_ADMIN_PASSWORD}
+    volumes:
+      - pb_data:/pb/pb_data
+    healthcheck:
+      test: ["CMD", "/pb/pocketbase", "health", "--http=http://127.0.0.1:8090"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      args:
+        PUBLIC_POCKETBASE_URL: ${PUBLIC_POCKETBASE_URL}
+        PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      ORIGIN: ${ORIGIN:-${PUBLIC_APP_URL}}
+      PROTOCOL_HEADER: x-forwarded-proto
+      HOST_HEADER: x-forwarded-host
+      ADDRESS_HEADER: x-forwarded-for
+      POCKETBASE_URL: http://pocketbase:8090
+      PUBLIC_POCKETBASE_URL: ${PUBLIC_POCKETBASE_URL}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+      REDIS_URL: redis://redis:6379
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      redis:
+        condition: service_healthy
+      pocketbase:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8090:8090"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy-params.conf:/etc/nginx/proxy-params.conf:ro
+      - ./nginx/ssl-enabled.conf:/etc/nginx/ssl-enabled.conf:ro
+      - ./nginx/certbot:/var/www/certbot:ro
+      - ./nginx/certs:/etc/letsencrypt:ro
+    depends_on:
+      - app
+      - pocketbase
+
+  bootstrap:
+    image: node:22-bookworm-slim
+    profiles: ["bootstrap"]
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      POCKETBASE_URL: http://pocketbase:8090
+    volumes:
+      - ./scripts/bootstrap-developer.mjs:/app/bootstrap-developer.mjs:ro
+    entrypoint: ["node", "/app/bootstrap-developer.mjs"]
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+
+volumes:
+  pb_data:
+  redis_data:

@@ -1,16 +1,18 @@
 import { loadLandingPublicData } from '$lib/landing/public-data';
 import { LANDING_ARTICLES_FALLBACK } from '$lib/landing/articles-fallback';
 import { getCachedJson, publicCacheHeaders } from '$lib/server/cache';
+import { getServerPb } from '$lib/server/pocketbase';
 import type { PageServerLoad } from './$types';
 
-const LANDING_CACHE_TTL = 120;
+const LANDING_CACHE_TTL = 300;
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
 	setHeaders(publicCacheHeaders(LANDING_CACHE_TTL));
 
 	try {
+		const pb = getServerPb();
 		const data = await getCachedJson('public:landing-home', LANDING_CACHE_TTL, () =>
-			loadLandingPublicData()
+			loadLandingPublicData(pb)
 		);
 		return {
 			connected: true,

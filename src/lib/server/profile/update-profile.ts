@@ -1,21 +1,26 @@
 /**
- * Server-side profile mutations — always run with the caller's PocketBase token
- * so collection updateRules (role lock) stay enforced. Never accept `role` from body.
+ * Server-side profile mutations — caller identity verified from session token;
+ * writes use admin PB because users.updateRule blocks regular record PATCH in PB 0.27.
+ * Never accept `role` / `verified` / `emailVisibility` from body.
  */
 import type PocketBase from 'pocketbase';
-import { PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
+import { getAdminPb, PB_NO_AUTO_CANCEL } from '$lib/server/pocketbase';
+import { resolveUserFromAuthToken } from '$lib/server/auth-token';
 import {
 	findUserIdByUsername,
+	findUserIdByEmail,
 	normalizeUsername
 } from '$lib/server/user-uniqueness';
 import { isValidProvince, isValidCityForProvince } from '$lib/data/iran-provinces';
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type ProfileDetailsPatch = {
 	name?: string;
 	username?: string;
 	birth_date?: string;
+	email?: string;
 };
 
 export type ProfileAddressPatch = {
@@ -25,18 +30,21 @@ export type ProfileAddressPatch = {
 	landline?: string;
 };
 
-function pbWithUserToken(base: PocketBase, token: string): PocketBase {
-	base.authStore.save(token, null as never);
-	return base;
+async function assertCaller(token: string, userId: string): Promise<void> {
+	const caller = await resolveUserFromAuthToken(token);
+	if (!caller || caller.id !== userId) {
+		throw new Error('احراز هویت لازم است');
+	}
 }
 
 export async function updateProfileDetails(
-	pb: PocketBase,
+	_pb: PocketBase,
 	token: string,
 	userId: string,
 	patch: ProfileDetailsPatch
 ) {
-	const client = pbWithUserToken(pb, token);
+	await assertCaller(token, userId);
+	const admin = await getAdminPb();
 	const data: Record<string, string> = {};
 
 	if (patch.name !== undefined) {
@@ -51,7 +59,7 @@ export async function updateProfileDetails(
 			throw new Error('نام کاربری باید ۳ تا ۳۰ کاراکتر و فقط حروف انگلیسی، عدد و _ باشد');
 		}
 		if (username) {
-			const other = await findUserIdByUsername(client, username);
+			const other = await findUserIdByUsername(admin, username);
 			if (other && other !== userId) throw new Error('این نام کاربری قبلاً ثبت شده است');
 			data.username = username;
 		}
@@ -61,18 +69,27 @@ export async function updateProfileDetails(
 		data.birth_date = patch.birth_date.slice(0, 10);
 	}
 
+	if (patch.email !== undefined) {
+		const email = patch.email.trim().toLowerCase();
+		if (!email) throw new Error('ایمیل را وارد کنید');
+		if (!EMAIL_RE.test(email)) throw new Error('فرمت ایمیل نامعتبر است');
+		const other = await findUserIdByEmail(admin, email);
+		if (other && other !== userId) throw new Error('این ایمیل قبلاً ثبت شده است');
+		data.email = email;
+	}
+
 	if (!Object.keys(data).length) throw new Error('هیچ فیلدی برای به‌روزرسانی ارسال نشده');
 
-	return client.collection('users').update(userId, data, PB_NO_AUTO_CANCEL);
+	return admin.collection('users').update(userId, data, PB_NO_AUTO_CANCEL);
 }
 
 export async function updateProfileAddress(
-	pb: PocketBase,
+	_pb: PocketBase,
 	token: string,
 	userId: string,
 	patch: ProfileAddressPatch
 ) {
-	const client = pbWithUserToken(pb, token);
+	await assertCaller(token, userId);
 	const province = (patch.province ?? '').trim();
 	const city = (patch.city ?? '').trim();
 
@@ -80,48 +97,59 @@ export async function updateProfileAddress(
 		throw new Error('استان نامعتبر است');
 	}
 	if (province && city && !isValidCityForProvince(province, city)) {
-		throw new Error('شهر با استان هم‌خوان نیست');
+		throw new Error('شهر با استان انتخاب‌شده هم‌خوان نیست');
+	}
+	if (province && !city) {
+		throw new Error('شهر را انتخاب کنید');
+	}
+	if (city && !province) {
+		throw new Error('ابتدا استان را انتخاب کنید');
 	}
 
-	const data = {
+	const admin = await getAdminPb();
+	const data: Record<string, string> = {
 		province,
 		city,
 		home_address: (patch.home_address ?? '').trim(),
 		landline: (patch.landline ?? '').trim()
 	};
+	const homeAddress = data.home_address;
+	if (homeAddress) data.address = homeAddress;
 
-	return client.collection('users').update(userId, data, PB_NO_AUTO_CANCEL);
+	return admin.collection('users').update(userId, data, PB_NO_AUTO_CANCEL);
 }
 
 export async function updateProfileAvatar(
-	pb: PocketBase,
+	_pb: PocketBase,
 	token: string,
 	userId: string,
 	avatar: File
 ) {
-	const client = pbWithUserToken(pb, token);
+	await assertCaller(token, userId);
+	const admin = await getAdminPb();
 	const form = new FormData();
 	form.append('avatar', avatar);
-	return client.collection('users').update(userId, form, PB_NO_AUTO_CANCEL);
+	return admin.collection('users').update(userId, form, PB_NO_AUTO_CANCEL);
 }
 
 export async function updateProfilePassword(
-	pb: PocketBase,
+	_pb: PocketBase,
 	token: string,
 	userId: string,
 	input: { oldPassword?: string; password: string; passwordConfirm: string }
 ) {
+	await assertCaller(token, userId);
 	if (input.password.length < 8) throw new Error('رمز جدید باید حداقل ۸ کاراکتر باشد');
 	if (input.password !== input.passwordConfirm) {
 		throw new Error('تکرار رمز با رمز جدید یکسان نیست');
 	}
 
-	const client = pbWithUserToken(pb, token);
+	const admin = await getAdminPb();
 	const payload: Record<string, string> = {
 		password: input.password,
 		passwordConfirm: input.passwordConfirm
 	};
 	if (input.oldPassword) payload.oldPassword = input.oldPassword;
 
-	return client.collection('users').update(userId, payload, PB_NO_AUTO_CANCEL);
+	return admin.collection('users').update(userId, payload, PB_NO_AUTO_CANCEL);
 }

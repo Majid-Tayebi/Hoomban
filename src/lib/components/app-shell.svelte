@@ -32,7 +32,13 @@
 		fallbackUser = null as AuthUser
 	} = $props();
 
-	let user = $derived(getUser() ?? fallbackUser);
+	let user = $derived.by(() => {
+		const client = getUser();
+		const base = client ?? fallbackUser;
+		if (!base) return null;
+		if (client?.avatarUrl || !fallbackUser?.avatarUrl) return base;
+		return { ...base, avatarUrl: fallbackUser.avatarUrl };
+	});
 	let hydrated = $derived(isAuthHydrated());
 	let clientActive = $state(false);
 	$effect(() => {
@@ -40,7 +46,6 @@
 	});
 	const shellReady = $derived(Boolean(fallbackUser) || hydrated || clientActive);
 	let sidebarOpen = $state(false);
-	let authAvatarSynced = $state(false);
 	const todayLabel = $derived(formatFaDate(new Date()));
 
 	$effect(() => {
@@ -49,19 +54,21 @@
 	});
 
 	$effect(() => {
-		const id = user?.id;
-		if (!hydrated || !id || id === 'demo-user' || authAvatarSynced) return;
-		authAvatarSynced = true;
+		if (!hydrated || !user?.id || user.id === 'demo-user' || user.avatarUrl) return;
+		if (!pb.authStore.isValid) return;
 		void refreshAuthUser();
 	});
 
 	$effect(() => {
 		if (!hydrated || !user?.id || user.id === 'demo-user') return;
 		if (!pb.authStore.isValid) return;
-		bindNotifications(user.id);
-		void initPushForUser(user.id);
+		const timer = setTimeout(() => {
+			bindNotifications(user.id);
+			void initPushForUser(user.id);
+		}, 800);
 		const unbindPush = bindServiceWorkerPush();
 		return () => {
+			clearTimeout(timer);
 			unbindPush();
 			stopNotifications();
 		};

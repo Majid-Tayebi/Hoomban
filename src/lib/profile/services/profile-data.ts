@@ -47,6 +47,7 @@ export type SaveProfileDetailsInput = {
 	lastName: string;
 	birthDate: string;
 	username: string;
+	email?: string;
 	avatarFile?: File | null;
 };
 
@@ -58,7 +59,7 @@ export type SaveProfileAddressInput = {
 };
 
 export async function checkFieldUnique(
-	field: 'mobile' | 'username',
+	field: 'mobile' | 'username' | 'email',
 	value: string,
 	userId?: string
 ): Promise<{ available: true } | { available: false; error: string }> {
@@ -93,6 +94,12 @@ export async function saveProfileDetails(userId: string, input: SaveProfileDetai
 		if (!unique.available) throw new Error(unique.error);
 	}
 
+	const email = input.email?.trim().toLowerCase() ?? '';
+	if (email) {
+		const unique = await checkFieldUnique('email', email, userId);
+		if (!unique.available) throw new Error(unique.error);
+	}
+
 	const res = await fetch('/api/profile', {
 		method: 'PATCH',
 		headers: authHeaders(),
@@ -101,7 +108,8 @@ export async function saveProfileDetails(userId: string, input: SaveProfileDetai
 			section: 'details',
 			name,
 			username: username || undefined,
-			birthDate: input.birthDate || undefined
+			birthDate: input.birthDate || undefined,
+			email: email || undefined
 		})
 	});
 	if (!res.ok) throw new Error(await readApiError(res, 'ذخیره پروفایل ناموفق بود'));

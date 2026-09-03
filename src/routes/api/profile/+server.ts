@@ -35,9 +35,10 @@ export const PATCH: RequestHandler = async ({ request, cookies }) => {
 			const record = await updateProfileDetails(pb, user.token, user.id, {
 				name,
 				username: body.username != null ? String(body.username) : undefined,
-				birth_date: body.birthDate != null ? String(body.birthDate) : undefined
+				birth_date: body.birthDate != null ? String(body.birthDate) : undefined,
+				email: body.email != null ? String(body.email) : undefined
 			});
-			return json({ record: mapProfileRecord(record as never) });
+			return json({ record: mapProfileRecord(record as never, user.token) });
 		}
 
 		if (section === 'address') {
@@ -47,12 +48,20 @@ export const PATCH: RequestHandler = async ({ request, cookies }) => {
 				home_address: body.homeAddress != null ? String(body.homeAddress) : undefined,
 				landline: body.landline != null ? String(body.landline) : undefined
 			});
-			return json({ record: mapProfileRecord(record as never) });
+			return json({ record: mapProfileRecord(record as never, user.token) });
 		}
 
 		return json({ error: 'بخش نامعتبر است' }, { status: 400 });
 	} catch (err: unknown) {
-		const message = err instanceof Error ? err.message : 'ذخیره پروفایل ناموفق بود';
+		const message =
+			err instanceof Error
+				? err.message
+				: typeof err === 'object' &&
+					  err &&
+					  'response' in err &&
+					  typeof (err as { response?: { message?: string } }).response?.message === 'string'
+					? String((err as { response: { message: string } }).response.message)
+					: 'ذخیره پروفایل ناموفق بود';
 		return json({ error: message }, { status: 400 });
 	}
 };

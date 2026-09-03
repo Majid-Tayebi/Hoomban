@@ -11,6 +11,8 @@ export type ResolvedAuthUser = {
 	name?: string;
 	email?: string;
 	mobile?: string;
+	avatar?: string;
+	updated?: string;
 };
 
 type JwtPayload = {
@@ -18,6 +20,9 @@ type JwtPayload = {
 	exp?: number;
 	refreshable?: boolean;
 };
+
+const RESOLVE_CACHE_TTL_MS = 60_000;
+const resolveCache = new Map<string, { at: number; user: ResolvedAuthUser }>();
 
 export function decodeAuthJwt(token: string): JwtPayload | null {
 	try {
@@ -36,33 +41,58 @@ function isExpired(payload: JwtPayload | null): boolean {
 	return payload.exp * 1000 <= Date.now();
 }
 
+function mapResolved(
+	token: string,
+	model: {
+		id?: string;
+		role?: string;
+		name?: string;
+		email?: string;
+		mobile?: string;
+		avatar?: string;
+		updated?: string;
+	}
+): ResolvedAuthUser | null {
+	if (!model?.id) return null;
+	return {
+		id: model.id,
+		role: String(model.role || 'patient'),
+		token,
+		name: model.name,
+		email: model.email,
+		mobile: model.mobile,
+		avatar: model.avatar ? String(model.avatar) : undefined,
+		updated: model.updated ? String(model.updated) : undefined
+	};
+}
+
+function cacheResolved(token: string, user: ResolvedAuthUser) {
+	resolveCache.set(token, { at: Date.now(), user });
+}
+
 /** Validate a PocketBase users token via authRefresh; impersonation tokens validated by PB API. */
 export async function resolveUserFromAuthToken(token: string): Promise<ResolvedAuthUser | null> {
 	if (!token.trim()) return null;
+
+	const cached = resolveCache.get(token);
+	if (cached && Date.now() - cached.at < RESOLVE_CACHE_TTL_MS) {
+		return cached.user;
+	}
+
+	const payload = decodeAuthJwt(token);
+	if (payload?.exp && !isExpired(payload) && payload.exp * 1000 - Date.now() > 5 * 60_000) {
+		if (cached) return cached.user;
+	}
 
 	const pb = getServerPb();
 	pb.authStore.save(token, null as never);
 
 	try {
 		const auth = await pb.collection('users').authRefresh();
-		const model = auth.record as {
-			id?: string;
-			role?: string;
-			name?: string;
-			email?: string;
-			mobile?: string;
-		};
-		if (!model?.id) return null;
-		return {
-			id: model.id,
-			role: String(model.role || 'patient'),
-			token,
-			name: model.name,
-			email: model.email,
-			mobile: model.mobile
-		};
+		const resolved = mapResolved(token, auth.record as never);
+		if (resolved) cacheResolved(token, resolved);
+		return resolved;
 	} catch {
-		const payload = decodeAuthJwt(token);
 		if (!payload?.id || isExpired(payload) || payload.refreshable !== false) {
 			return null;
 		}
@@ -71,14 +101,9 @@ export async function resolveUserFromAuthToken(token: string): Promise<ResolvedA
 			const userPb = new PocketBase(PB_URL);
 			userPb.authStore.save(token, null as never);
 			const record = await userPb.collection('users').getOne(payload.id);
-			return {
-				id: record.id,
-				role: String(record.role || 'patient'),
-				token,
-				name: record.name as string | undefined,
-				email: record.email as string | undefined,
-				mobile: record.mobile as string | undefined
-			};
+			const resolved = mapResolved(token, record as never);
+			if (resolved) cacheResolved(token, resolved);
+			return resolved;
 		} catch {
 			return null;
 		}

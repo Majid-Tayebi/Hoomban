@@ -8,6 +8,7 @@ import { enforceAuthRateLimit, rateLimitErrorMessage } from '$lib/server/rate-li
 import {
 	assertMobileAvailable,
 	assertUsernameAvailable,
+	assertEmailAvailable,
 	normalizeMobile,
 	normalizeUsername
 } from '$lib/server/user-uniqueness';
@@ -65,6 +66,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			const result = await assertUsernameAvailable(pb, username, { excludeUserId });
 			if (!result.ok) return json({ available: false, error: result.error }, { status: 409 });
 			return json({ available: true, value: result.username });
+		}
+
+		if (field === 'email') {
+			const email = String(body.value ?? body.email ?? '');
+			const pb = await getAdminPb();
+			const result = await assertEmailAvailable(pb, email, { excludeUserId });
+			if (!result.ok) return json({ available: false, error: result.error }, { status: 409 });
+			return json({ available: true, value: result.email });
 		}
 
 		return json({ error: 'فیلد نامعتبر است' }, { status: 400 });

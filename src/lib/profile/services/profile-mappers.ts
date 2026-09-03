@@ -1,4 +1,4 @@
-import { pb } from '$lib/pocketbase';
+import { appAvatarUrl } from '$lib/avatar-url';
 import type { ProfileRecord } from './profile-types';
 
 export function normalizeIranMobile(raw: string): string {
@@ -38,23 +38,21 @@ export function splitFullName(full: string): { firstName: string; lastName: stri
 	return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
-function avatarUrlFromRecord(record: { id: string; avatar?: unknown; updated?: unknown }): string | null {
-	if (!record.avatar) return null;
-	const base = pb.files.getURL(
-		{ id: record.id, collectionName: 'users' } as never,
-		String(record.avatar)
-	);
-	const cacheKey = record.updated ? String(record.updated) : record.id;
-	return `${base}${base.includes('?') ? '&' : '?'}v=${encodeURIComponent(cacheKey)}`;
+function avatarUrlFromRecord(record: {
+	id: string;
+	avatar?: unknown;
+	updated?: unknown;
+}): string | null {
+	return appAvatarUrl(record.id, record.avatar, record.updated);
 }
 
 export function userAvatarUrl(
 	userId: string,
 	avatar: unknown,
-	updated?: unknown
+	updated?: unknown,
+	_token?: string
 ): string | null {
-	if (!avatar) return null;
-	return avatarUrlFromRecord({ id: userId, avatar, updated });
+	return appAvatarUrl(userId, avatar, updated);
 }
 
 export function mapProfileRecord(record: {
@@ -72,8 +70,13 @@ export function mapProfileRecord(record: {
 	avatar?: unknown;
 	verified?: unknown;
 	updated?: unknown;
-}): ProfileRecord {
-	const birthRaw = record.birth_date ? String(record.birth_date).slice(0, 10) : '';
+}, _token?: string): ProfileRecord {
+	const birthRaw =
+		record.birth_date != null && String(record.birth_date)
+			? String(record.birth_date).slice(0, 10)
+			: 'birthDate' in record && record.birthDate
+				? String(record.birthDate).slice(0, 10)
+				: '';
 	return {
 		id: record.id,
 		name: String(record.name || ''),

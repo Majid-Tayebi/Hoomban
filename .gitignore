@@ -65,3 +65,7 @@ pnpm-debug.log*
 # Optional local overrides
 *.local
 !.env.example
+
+# TLS material (generated on server)
+nginx/certs/
+nginx/certbot/

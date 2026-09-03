@@ -1,5 +1,5 @@
 import { pb } from '$lib/pocketbase';
-import { userAvatarUrl } from '$lib/profile/services/profile-data';
+import { appAvatarUrl } from '$lib/avatar-url';
 import { dev } from '$app/environment';
 
 export type UserRole = 'patient' | 'doctor' | 'secretary' | 'admin' | 'writer';
@@ -36,7 +36,7 @@ function readDemoUser(): AuthUser {
 
 function enrichUser(model: AuthUser): AuthUser {
 	if (!model?.id) return model;
-	const avatarUrl = userAvatarUrl(model.id, model.avatar, model.updated);
+	const avatarUrl = appAvatarUrl(model.id, model.avatar, model.updated);
 	return { ...model, avatarUrl };
 }
 

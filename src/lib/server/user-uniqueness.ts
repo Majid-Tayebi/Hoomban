@@ -39,6 +39,17 @@ export async function findUserIdByUsername(pb: PocketBase, username: string): Pr
 	}
 }
 
+export async function findUserIdByEmail(pb: PocketBase, email: string): Promise<string | null> {
+	const normalized = email.trim().toLowerCase();
+	if (!normalized) return null;
+	try {
+		const row = await pb.collection('users').getFirstListItem(`email = "${normalized}"`);
+		return row.id;
+	} catch {
+		return null;
+	}
+}
+
 export async function findStaffIdByMobile(pb: PocketBase, mobile: string): Promise<string | null> {
 	const normalized = normalizeMobile(mobile);
 	if (!MOBILE_REGEX.test(normalized)) return null;
@@ -90,4 +101,21 @@ export async function assertUsernameAvailable(
 	}
 
 	return { ok: true, username: bare };
+}
+
+export async function assertEmailAvailable(
+	pb: PocketBase,
+	email: string,
+	opts?: { excludeUserId?: string }
+): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
+	const normalized = email.trim().toLowerCase();
+	if (!normalized) return { ok: false, error: 'ایمیل را وارد کنید' };
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+		return { ok: false, error: 'فرمت ایمیل نامعتبر است' };
+	}
+	const ownerId = await findUserIdByEmail(pb, normalized);
+	if (ownerId && ownerId !== opts?.excludeUserId) {
+		return { ok: false, error: 'این ایمیل قبلاً ثبت شده است' };
+	}
+	return { ok: true, email: normalized };
 }

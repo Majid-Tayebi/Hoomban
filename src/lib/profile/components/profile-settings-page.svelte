@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { getUser, setUserFromModel, refreshAuthUser } from '$lib/auth.svelte';
 	import ProfileAddressForm from '$lib/profile/components/profile-address-form.svelte';
+	import ProfileAvatarCropDialog from '$lib/profile/components/profile-avatar-crop-dialog.svelte';
 	import ProfileDetailsForm from '$lib/profile/components/profile-details-form.svelte';
 	import ProfileMobileOtpDialog from '$lib/profile/components/profile-mobile-otp-dialog.svelte';
 	import ProfilePasswordForm from '$lib/profile/components/profile-password-form.svelte';
@@ -11,7 +13,6 @@
 		changePassword,
 		isValidIranMobile,
 		loadProfile,
-		mapProfileRecord,
 		mobileLocalPart,
 		normalizeIranMobile,
 		saveProfileAddress,
@@ -42,6 +43,7 @@
 	let lastName = $state('');
 	let birthDate = $state('');
 	let usernameLocal = $state('');
+	let emailLocal = $state('');
 	let registeredMobile = $state('');
 	let mobileLocal = $state('');
 	let province = $state('');
@@ -50,6 +52,8 @@
 	let landline = $state('');
 	let avatarPreview = $state<string | null>(null);
 	let avatarFile = $state<File | null>(null);
+	let avatarCropOpen = $state(false);
+	let pendingAvatarFile = $state<File | null>(null);
 	let oldPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
@@ -83,6 +87,9 @@
 			Boolean(registeredMobile) &&
 			!profile?.verified
 	);
+	const emailChanged = $derived(
+		Boolean(profile) && emailLocal.trim().toLowerCase() !== (profile?.email || '').trim().toLowerCase()
+	);
 	const cityOptions = $derived(citiesForProvince(province));
 	const usernameDisplay = $derived(usernameWithPrefix(usernameLocal));
 	const showPushSettings = $derived(
@@ -113,6 +120,7 @@
 		lastName = parts.lastName;
 		birthDate = record.birthDate;
 		usernameLocal = stripUsernamePrefix(record.username);
+		emailLocal = record.email;
 		registeredMobile = normalizeIranMobile(record.mobile);
 		mobileLocal = mobileLocalPart(record.mobile);
 		province = record.province;
@@ -121,6 +129,10 @@
 		landline = record.landline;
 		avatarPreview = record.avatarUrl;
 		avatarFile = null;
+	}
+
+	function cancelToDashboard() {
+		void goto('/dashboard');
 	}
 
 	function resetDetailsForm() {
@@ -173,9 +185,21 @@
 	function onAvatarPick(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
+		input.value = '';
 		if (!file) return;
+		pendingAvatarFile = file;
+		avatarCropOpen = true;
+	}
+
+	function onAvatarCropConfirm(file: File) {
 		avatarFile = file;
+		if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview);
 		avatarPreview = URL.createObjectURL(file);
+		pendingAvatarFile = null;
+	}
+
+	function onAvatarCropCancel() {
+		pendingAvatarFile = null;
 	}
 
 	async function persistDetails() {
@@ -188,9 +212,10 @@
 			lastName,
 			birthDate,
 			username: usernameLocal,
+			email: emailLocal,
 			avatarFile
 		});
-		applyProfile(mapProfileRecord(updated));
+		applyProfile(updated);
 		await refreshAuthUser();
 		message = 'مشخصات ذخیره شد';
 	}
@@ -203,6 +228,14 @@
 	async function submitDetails() {
 		message = '';
 		error = '';
+		if (!emailLocal.trim()) {
+			error = 'ایمیل را وارد کنید';
+			return;
+		}
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLocal.trim())) {
+			error = 'فرمت ایمیل نامعتبر است';
+			return;
+		}
 		if (!isValidIranMobile(currentMobile)) {
 			error = 'شماره موبایل باید ۱۰ رقم بعد از ۹ باشد (مثال: 912xxxxxxx)';
 			return;
@@ -229,6 +262,14 @@
 			error = 'برای ذخیره پروفایل باید با حساب واقعی وارد شوید';
 			return;
 		}
+		if (province && !city) {
+			error = 'شهر را انتخاب کنید';
+			return;
+		}
+		if (city && !province) {
+			error = 'ابتدا استان را انتخاب کنید';
+			return;
+		}
 		savingAddress = true;
 		try {
 			const updated = await saveProfileAddress(userId, {
@@ -237,7 +278,7 @@
 				homeAddress,
 				landline
 			});
-			applyProfile(mapProfileRecord(updated));
+			applyProfile(updated);
 			message = 'آدرس ذخیره شد';
 		} catch (e: unknown) {
 			error = e instanceof Error ? e.message : 'ذخیره ناموفق بود';
@@ -340,15 +381,16 @@
 						bind:birthDate
 						bind:usernameLocal
 						bind:mobileLocal
-						email={profile?.email || ''}
+						bind:email={emailLocal}
 						emailVerified={Boolean(profile?.verified)}
+						{emailChanged}
 						{mobileVerified}
 						{mobileChanged}
 						{needsMobileVerification}
 						{savingDetails}
 						{JalaliDatePickerCmp}
 						onEnsureBirthDatePicker={() => void ensureBirthDatePicker()}
-						onReset={resetDetailsForm}
+						onReset={cancelToDashboard}
 						onSubmit={submitDetails}
 						onStartMobileVerification={startMobileVerification}
 					/>
@@ -360,7 +402,7 @@
 						bind:landline
 						{cityOptions}
 						{savingAddress}
-						onReset={resetAddressForm}
+						onReset={cancelToDashboard}
 						onSubmit={submitAddress}
 					/>
 				{:else}
@@ -369,7 +411,7 @@
 						bind:newPassword
 						bind:confirmPassword
 						{savingPassword}
-						onReset={resetPasswordForm}
+						onReset={cancelToDashboard}
 						onSubmit={submitPassword}
 					/>
 				{/if}
@@ -393,3 +435,10 @@
 		onVerified={onMobileVerified}
 	/>
 {/if}
+
+<ProfileAvatarCropDialog
+	bind:open={avatarCropOpen}
+	file={pendingAvatarFile}
+	onConfirm={onAvatarCropConfirm}
+	onCancel={onAvatarCropCancel}
+/>

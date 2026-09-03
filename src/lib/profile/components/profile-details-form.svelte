@@ -13,8 +13,9 @@
 		birthDate = $bindable(''),
 		usernameLocal = $bindable(''),
 		mobileLocal = $bindable(''),
-		email = '',
+		email = $bindable(''),
 		emailVerified = false,
+		emailChanged = false,
 		mobileVerified = false,
 		mobileChanged = false,
 		needsMobileVerification = false,
@@ -32,6 +33,7 @@
 		mobileLocal?: string;
 		email?: string;
 		emailVerified?: boolean;
+		emailChanged?: boolean;
 		mobileVerified?: boolean;
 		mobileChanged?: boolean;
 		needsMobileVerification?: boolean;
@@ -109,14 +111,16 @@
 	<div class="space-y-1.5">
 		<Label for="email">ایمیل</Label>
 		<div
-			class="flex h-11 items-center overflow-hidden rounded-xl border border-border bg-background opacity-90 shadow-sm"
+			class="flex h-11 items-center overflow-hidden rounded-xl border border-border bg-background shadow-sm"
 			dir="ltr"
 		>
 			<input
 				id="email"
-				value={email}
-				disabled
-				class="min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-foreground outline-none disabled:cursor-not-allowed"
+				type="email"
+				bind:value={email}
+				autocomplete="email"
+				placeholder="name@example.com"
+				class="min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-foreground outline-none"
 			/>
 			<div
 				class={cn(
@@ -133,6 +137,9 @@
 				{/if}
 			</div>
 		</div>
+		{#if emailChanged}
+			<p class="text-xs text-amber-600">پس از ذخیره، ایمیل جدید در حساب شما ثبت می‌شود.</p>
+		{/if}
 	</div>
 
 	<div class="space-y-1.5">

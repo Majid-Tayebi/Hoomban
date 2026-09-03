@@ -25,8 +25,15 @@
 	} = $props();
 
 	let open = $state(false);
+	let avatarBroken = $state(false);
+
+	$effect(() => {
+		avatarUrl;
+		avatarBroken = false;
+	});
 
 	const initial = $derived(name.trim().charAt(0) || 'ه');
+	const showImage = $derived(Boolean(avatarUrl) && !avatarBroken);
 
 	const itemClass =
 		'group flex cursor-pointer select-none items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium outline-none transition-all duration-200 ease-in-out data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground';
@@ -36,8 +43,15 @@
 </script>
 
 {#snippet avatarContent(sizeClass = 'text-sm')}
-	{#if avatarUrl}
-		<img src={avatarUrl} alt={name} class="h-full w-full object-cover" />
+	{#if showImage}
+		<img
+			src={avatarUrl}
+			alt={name}
+			class="h-full w-full object-cover"
+			onerror={() => {
+				avatarBroken = true;
+			}}
+		/>
 	{:else}
 		<div
 			class={cn(

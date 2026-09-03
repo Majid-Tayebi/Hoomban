@@ -1,4 +1,5 @@
-import { pb } from '$lib/pocketbase';
+import type PocketBase from 'pocketbase';
+import { pb as browserPb } from '$lib/pocketbase';
 import { LANDING_ARTICLES_FALLBACK } from '$lib/landing/articles-fallback';
 
 export type LandingDoctor = {
@@ -89,10 +90,11 @@ export function resolveDefaultLandingDoctorId(
 }
 
 export function getLandingDoctorPhotoUrl(
-	doctor: Pick<LandingDoctor, 'id' | 'photo' | 'updated'>
+	doctor: Pick<LandingDoctor, 'id' | 'photo' | 'updated'>,
+	client: PocketBase = browserPb
 ): string | null {
 	if (!doctor.photo) return null;
-	const base = pb.files.getURL(
+	const base = client.files.getURL(
 		{ id: doctor.id, collectionName: 'doctors' } as never,
 		doctor.photo
 	);
@@ -114,13 +116,16 @@ export function resolveLandingArticles(articles: LandingArticle[]): LandingArtic
 	return LANDING_ARTICLES_FALLBACK;
 }
 
-export async function loadPublishedArticles(limit = 50): Promise<LandingArticle[]> {
+export async function loadPublishedArticles(
+	limit = 50,
+	client: PocketBase = browserPb
+): Promise<LandingArticle[]> {
 	try {
-		const result = await pb.collection('articles').getList(1, limit, {
+		const result = await client.collection('articles').getList(1, limit, {
 			filter: 'is_published = true',
 			sort: '-created',
 			expand: 'author',
-			fields: 'id,title,slug,excerpt,cover,updated,created,author,expand.author.name'
+			fields: 'id,title,slug,excerpt,cover,updated,created,author'
 		});
 		const mapped = result.items.map((item) =>
 			mapLandingArticle(item as unknown as Record<string, unknown>)
@@ -131,48 +136,66 @@ export async function loadPublishedArticles(limit = 50): Promise<LandingArticle[
 	}
 }
 
-export async function loadLandingPublicData(): Promise<{
+export async function loadLandingPublicData(
+	client: PocketBase = browserPb
+): Promise<{
 	doctors: LandingDoctor[];
 	services: LandingService[];
 	testimonials: LandingTestimonial[];
 	articles: LandingArticle[];
 }> {
-	const [doctorsResult, servicesResult, testimonialsResult, articlesResult] = await Promise.all([
-		pb.collection('doctors').getList(1, 40, {
-			filter: 'is_active = true',
-			sort: 'sort_order',
-			expand: 'user'
-		}),
-		pb.collection('services').getList(1, 20, {
-			filter: 'is_active = true && price > 0',
-			sort: 'sort_order',
-			fields: 'id,title,description,price,category,sort_order'
-		}),
-		pb.collection('testimonials').getList(1, 24, {
-			filter: 'is_published = true',
-			sort: 'sort_order',
-			fields: 'id,author,source,body,rating,doctor,sort_order'
-		}),
-		pb.collection('articles').getList(1, 6, {
-			filter: 'is_published = true',
-			sort: '-created',
-			expand: 'author',
-			fields: 'id,title,slug,excerpt,cover,updated,created,author,expand.author.name'
-		})
-	]);
+	const doctorsPromise = client.collection('doctors').getList(1, 12, {
+		filter: 'is_active = true',
+		sort: 'sort_order',
+		expand: 'user',
+		fields: 'id,display_name,specialty,bio,visit_fee,slot_duration,photo,updated,created,expand'
+	});
+	const servicesPromise = client.collection('services').getList(1, 12, {
+		filter: 'is_active = true && price > 0',
+		sort: 'sort_order',
+		fields: 'id,title,description,price,category,sort_order'
+	});
+	const testimonialsPromise = client.collection('testimonials').getList(1, 12, {
+		filter: 'is_published = true',
+		sort: 'sort_order',
+		fields: 'id,author,source,body,rating,doctor,sort_order'
+	});
+	const articlesPromise = client.collection('articles').getList(1, 6, {
+		filter: 'is_published = true',
+		sort: '-created',
+		expand: 'author',
+		fields: 'id,title,slug,excerpt,cover,updated,created,author'
+	});
+
+	const [doctorsResult, servicesResult, testimonialsResult, articlesResult] =
+		await Promise.allSettled([
+			doctorsPromise,
+			servicesPromise,
+			testimonialsPromise,
+			articlesPromise
+		]);
+
+	const doctorsItems =
+		doctorsResult.status === 'fulfilled' ? doctorsResult.value.items : [];
+	const servicesItems =
+		servicesResult.status === 'fulfilled' ? servicesResult.value.items : [];
+	const testimonialsItems =
+		testimonialsResult.status === 'fulfilled' ? testimonialsResult.value.items : [];
+	const articlesItems =
+		articlesResult.status === 'fulfilled' ? articlesResult.value.items : [];
 
 	return {
-		doctors: doctorsResult.items.map((item) =>
+		doctors: doctorsItems.map((item) =>
 			mapLandingDoctor(item as unknown as Record<string, unknown>)
 		),
-		services: servicesResult.items.map((item) => ({
+		services: servicesItems.map((item) => ({
 			id: item.id,
 			title: String(item.title || ''),
 			description: String(item.description || ''),
 			price: Number(item.price || 0),
 			category: String(item.category || '')
 		})),
-		testimonials: testimonialsResult.items.map((item) => {
+		testimonials: testimonialsItems.map((item) => {
 			const expand = item.expand as { doctor?: string } | undefined;
 			const doctorField = item.doctor;
 			const doctorId =
@@ -193,7 +216,7 @@ export async function loadLandingPublicData(): Promise<{
 			};
 		}),
 		articles: resolveLandingArticles(
-			articlesResult.items.map((item) =>
+			articlesItems.map((item) =>
 				mapLandingArticle(item as unknown as Record<string, unknown>)
 			)
 		)

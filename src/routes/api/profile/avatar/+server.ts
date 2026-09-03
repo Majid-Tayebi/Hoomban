@@ -30,7 +30,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const pb = getServerPb();
 		const record = await updateProfileAvatar(pb, user.token, user.id, file);
-		return json({ record: mapProfileRecord(record as never) });
+		return json({ record: mapProfileRecord(record as never, user.token) });
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : 'ذخیره عکس ناموفق بود';
 		return json({ error: message }, { status: 400 });

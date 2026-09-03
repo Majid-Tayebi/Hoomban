@@ -21,6 +21,9 @@ const config = {
 					'self',
 					'http://127.0.0.1:8090',
 					'http://localhost:8090',
+					// Production PocketBase (update SERVER_HOST in .env and rebuild app image)
+					'http://188.212.99.114:8090',
+					'ws://188.212.99.114:8090',
 					'https://api.zarinpal.com',
 					'https://sandbox.zarinpal.com',
 					'https://payment.zarinpal.com',

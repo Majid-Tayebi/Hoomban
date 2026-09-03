@@ -17,7 +17,7 @@ migrate((app) => {
 	// ---------- psych_results ----------
 	const psychResults = app.findCollectionByNameOrId('psych_results');
 	const psychResultsRead =
-		"@request.auth.role != 'secretary' && (user = @request.auth.id || @request.auth.role = 'admin' || (@request.auth.role = 'doctor' && @collection.appointments.patient ?= user.id && @collection.appointments.doctor.user ?= @request.auth.id)";
+		"@request.auth.role != 'secretary' && (user = @request.auth.id || @request.auth.role = 'admin' || (@request.auth.role = 'doctor' && @collection.appointments.patient ?= user.id && @collection.appointments.doctor.user ?= @request.auth.id))";
 	psychResults.listRule = psychResultsRead;
 	psychResults.viewRule = psychResultsRead;
 	psychResults.createRule = "@request.auth.id != '' && user = @request.auth.id";
