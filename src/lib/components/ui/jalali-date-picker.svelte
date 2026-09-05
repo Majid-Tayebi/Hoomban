@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button.svelte';
 	import { cn } from '$lib/utils';
-	import { formatJalaliBirthDate, parseIsoDate, toIsoDateString } from '$lib/date';
+	import { dateToJalali, formatJalaliBirthDate, parseIsoDate, toIsoDateString } from '$lib/date';
 	import { CalendarDays } from '@lucide/svelte';
+	import JalaliWheelPicker from '$lib/components/ui/jalali-wheel-picker.svelte';
 
 	type CalendarComponent = typeof import('$lib/components/ui/calendar.svelte').default;
 
@@ -25,10 +26,24 @@
 	let CalendarCmp = $state<CalendarComponent | null>(null);
 	let loadingCalendar = $state(false);
 	let loadToken = 0;
+	let isMobile = $state(false);
 
 	const displayText = $derived(value ? formatJalaliBirthDate(value) : '');
+	const todayJy = dateToJalali(new Date()).jy;
 
 	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const mq = window.matchMedia('(max-width: 767px)');
+		const sync = () => {
+			isMobile = mq.matches;
+		};
+		sync();
+		mq.addEventListener('change', sync);
+		return () => mq.removeEventListener('change', sync);
+	});
+
+	$effect(() => {
+		if (isMobile) return;
 		void ensureCalendar();
 	});
 
@@ -46,9 +61,9 @@
 
 	async function openPicker() {
 		if (disabled) return;
-		draft = parseIsoDate(value) ?? new Date();
+		draft = parseIsoDate(value) ?? new Date(1990, 0, 1, 12);
 		open = true;
-		void ensureCalendar();
+		if (!isMobile) void ensureCalendar();
 	}
 
 	function closePicker() {
@@ -100,37 +115,70 @@
 			onclick={closePicker}
 		></button>
 
-		<div class="pointer-events-none fixed inset-0 flex items-center justify-center p-4 sm:p-6">
+		{#if isMobile}
 			<div
-				class="pointer-events-auto w-full max-w-sm rounded-2xl border border-border/60 bg-background p-5 shadow-2xl sm:p-6"
+				class="pointer-events-auto absolute inset-x-0 bottom-0 rounded-t-2xl border border-border/60 bg-background shadow-2xl"
 				role="dialog"
 				aria-modal="true"
-				aria-label="انتخاب تاریخ تولد"
+				aria-label="انتخاب تاریخ"
 			>
-				<div class="space-y-4">
-					{#if CalendarCmp}
-						<CalendarCmp bind:value={draft} class="border-0 p-0 shadow-none" minYear={1300} />
-					{:else}
-						<div class="flex min-h-[16rem] items-center justify-center text-sm text-muted-foreground">
-							{loadingCalendar ? 'در حال بارگذاری تقویم...' : 'تقویم در دسترس نیست'}
-						</div>
-					{/if}
-
-					<div class="flex flex-wrap gap-2">
-						<Button type="button" variant="outline" class="flex-1 rounded-xl" onclick={clearSelection}>
-							پاک کردن
-						</Button>
+				<div class="mx-auto mt-2 h-1 w-10 rounded-full bg-muted" aria-hidden="true"></div>
+				<div class="space-y-4 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+					<p class="text-center text-sm font-medium">انتخاب تاریخ</p>
+					<JalaliWheelPicker bind:value={draft} minYear={1300} maxYear={todayJy} />
+					<div class="grid grid-cols-2 gap-2" dir="rtl">
 						<Button
 							type="button"
-							class="flex-1 rounded-xl"
+							variant="ghost"
+							class="rounded-xl font-semibold text-primary"
 							onclick={confirmSelection}
-							disabled={!CalendarCmp}
 						>
 							تأیید
+						</Button>
+						<Button type="button" variant="ghost" class="rounded-xl text-primary" onclick={closePicker}>
+							لغو
 						</Button>
 					</div>
 				</div>
 			</div>
-		</div>
+		{:else}
+			<div class="pointer-events-none fixed inset-0 flex items-center justify-center p-4 sm:p-6">
+				<div
+					class="pointer-events-auto w-full max-w-sm rounded-2xl border border-border/60 bg-background p-5 shadow-2xl sm:p-6"
+					role="dialog"
+					aria-modal="true"
+					aria-label="انتخاب تاریخ تولد"
+				>
+					<div class="space-y-4">
+						{#if CalendarCmp}
+							<CalendarCmp
+								bind:value={draft}
+								class="border-0 p-0 shadow-none"
+								minYear={1300}
+								maxYear={todayJy}
+							/>
+						{:else}
+							<div class="flex min-h-[16rem] items-center justify-center text-sm text-muted-foreground">
+								{loadingCalendar ? 'در حال بارگذاری تقویم...' : 'تقویم در دسترس نیست'}
+							</div>
+						{/if}
+
+						<div class="flex flex-wrap gap-2">
+							<Button type="button" variant="outline" class="flex-1 rounded-xl" onclick={clearSelection}>
+								پاک کردن
+							</Button>
+							<Button
+								type="button"
+								class="flex-1 rounded-xl"
+								onclick={confirmSelection}
+								disabled={!CalendarCmp}
+							>
+								تأیید
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 {/if}
