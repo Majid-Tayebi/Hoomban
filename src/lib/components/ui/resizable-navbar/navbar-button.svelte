@@ -37,7 +37,7 @@
 				return 'bg-gradient-to-b from-primary to-primary/80 text-primary-foreground shadow-sm hover:-translate-y-0.5';
 			default:
 				return onDarkHero
-					? 'bg-white text-foreground shadow-sm hover:bg-white/90'
+					? 'bg-white text-neutral-900 shadow-sm hover:bg-white/90'
 					: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90';
 		}
 	});
