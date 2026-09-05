@@ -10,6 +10,10 @@ function canSendSms(role: string): boolean {
 	return role === 'admin' || role === 'secretary';
 }
 
+/**
+ * POST /api/sms/send — browser never calls SMS.ir.
+ * Queue + dispatch (Verify/Bulk with X-API-KEY) run only inside this SvelteKit handler.
+ */
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	const actor = await getAuthUserFromRequest(request, cookies);
 	if (!actor) {
@@ -64,8 +68,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			status: result.status,
 			id: result.id,
 			error: result.error,
-			configured: isSmsirConfigured(),
-			dispatchAllowed: isSmsDispatchAllowed()
+			configured: await isSmsirConfigured(),
+			dispatchAllowed: await isSmsDispatchAllowed()
 		});
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : 'خطا در صف پیامک';

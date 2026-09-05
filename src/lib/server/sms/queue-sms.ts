@@ -26,11 +26,9 @@ export async function queueSms(
 		input.body ||
 		(input.template ? renderSmsBody(input.template as SmsTemplate, input.payload || {}) : '');
 
-	const initialStatus = isSmsirConfigured()
-		? isSmsDispatchAllowed()
-			? 'pending'
-			: 'queued'
-		: 'stub';
+	const configured = await isSmsirConfigured();
+	const allowed = configured ? await isSmsDispatchAllowed() : false;
+	const initialStatus = configured ? (allowed ? 'pending' : 'queued') : 'stub';
 
 	const record = await pb.collection('sms_outbox').create(
 		{

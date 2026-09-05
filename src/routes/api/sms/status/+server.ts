@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getAuthUserFromRequest } from '$lib/server/request-auth';
 import {
 	isLocalHostEnvironment,
 	isSmsDispatchAllowed,
@@ -11,16 +10,17 @@ import {
 	shouldStubBulkSms
 } from '$lib/server/sms/smsir-config';
 import { smsirGetCredit, SmsIrError } from '$lib/server/sms/smsir-client';
+import { getAuthUserFromRequest } from '$lib/server/request-auth';
 
-/** Admin-only: check SMS.ir config and credit (localhost dispatch gate respected). */
+/** Admin / secretary: SMS.ir readiness checklist (no secrets). */
 export const GET: RequestHandler = async ({ request, cookies }) => {
 	const actor = await getAuthUserFromRequest(request, cookies);
-	if (!actor || actor.role !== 'admin') {
+	if (!actor || (actor.role !== 'admin' && actor.role !== 'secretary')) {
 		return json({ error: 'دسترسی ندارید' }, { status: 403 });
 	}
 
-	const configured = isSmsirConfigured();
-	const dispatchAllowed = isSmsDispatchAllowed();
+	const configured = await isSmsirConfigured();
+	const dispatchAllowed = await isSmsDispatchAllowed();
 
 	let credit: number | null = null;
 	let creditError: string | undefined;
@@ -36,8 +36,8 @@ export const GET: RequestHandler = async ({ request, cookies }) => {
 	return json({
 		provider: 'sms.ir',
 		configured,
-		bulkConfigured: isSmsirBulkConfigured(),
-		bulkStubMode: shouldStubBulkSms(),
+		bulkConfigured: await isSmsirBulkConfigured(),
+		bulkStubMode: await shouldStubBulkSms(),
 		sandbox: isSmsirSandbox(),
 		localOnly: isSmsirLocalOnly(),
 		localHost: isLocalHostEnvironment(),

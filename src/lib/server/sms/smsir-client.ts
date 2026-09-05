@@ -1,7 +1,7 @@
 import {
 	getSmsirApiBase,
-	getSmsirApiKey,
-	getSmsirLineNumber
+	resolveSmsConfig,
+	type ResolvedSmsConfig
 } from '$lib/server/sms/smsir-config';
 
 export class SmsIrError extends Error {
@@ -20,6 +20,13 @@ type SmsIrEnvelope<T> = {
 	data?: T;
 };
 
+/** SMS.ir HTTP must never run in the browser (API key stays on SvelteKit server only). */
+function assertServerSideSmsIr() {
+	if (typeof window !== 'undefined') {
+		throw new SmsIrError('فراخوانی SMS.ir فقط از سرور مجاز است');
+	}
+}
+
 export function toSmsIrMobile(raw: string): string {
 	let digits = raw.replace(/\D/g, '');
 	if (digits.startsWith('98') && digits.length === 12) digits = digits.slice(2);
@@ -37,9 +44,14 @@ function parseEnvelope<T>(json: SmsIrEnvelope<T>): T {
 	return json.data;
 }
 
-async function smsirPost<T>(path: string, body: unknown): Promise<T> {
-	const apiKey = getSmsirApiKey();
-	if (!apiKey) {
+async function smsirPost<T>(
+	path: string,
+	body: unknown,
+	cfg?: ResolvedSmsConfig
+): Promise<T> {
+	assertServerSideSmsIr();
+	const config = cfg ?? (await resolveSmsConfig());
+	if (!config.apiKey) {
 		throw new SmsIrError('کلید SMS.ir تنظیم نشده است');
 	}
 
@@ -48,7 +60,7 @@ async function smsirPost<T>(path: string, body: unknown): Promise<T> {
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json',
-			'X-API-KEY': apiKey
+			'X-API-KEY': config.apiKey
 		},
 		body: JSON.stringify(body)
 	});
@@ -66,27 +78,33 @@ export async function smsirVerifySend(params: {
 	mobile: string;
 	templateId: number;
 	parameters: { name: string; value: string }[];
+	config?: ResolvedSmsConfig;
 }): Promise<{ messageId: number; cost?: number }> {
 	const mobile = toSmsIrMobile(params.mobile);
 	if (mobile.length < 10) {
 		throw new SmsIrError('شماره موبایل نامعتبر است');
 	}
 
-	return smsirPost('/send/verify', {
-		mobile,
-		templateId: params.templateId,
-		parameters: params.parameters
-	});
+	return smsirPost(
+		'/send/verify',
+		{
+			mobile,
+			templateId: params.templateId,
+			parameters: params.parameters
+		},
+		params.config
+	);
 }
 
 export async function smsirBulkSend(params: {
 	mobiles: string[];
 	messageText: string;
 	sendDateTime?: number | null;
+	config?: ResolvedSmsConfig;
 }): Promise<{ packId: string; messageIds: (number | null)[]; cost?: number }> {
-	const lineNumber = getSmsirLineNumber();
-	if (!lineNumber) {
-		throw new SmsIrError('شماره خط SMS.ir (SMSIR_LINE_NUMBER) تنظیم نشده است');
+	const config = params.config ?? (await resolveSmsConfig());
+	if (!config.lineNumber) {
+		throw new SmsIrError('شماره خط SMS.ir تنظیم نشده است');
 	}
 
 	const mobiles = params.mobiles.map(toSmsIrMobile).filter((m) => m.length >= 10);
@@ -94,20 +112,25 @@ export async function smsirBulkSend(params: {
 		throw new SmsIrError('لیست گیرندگان خالی است');
 	}
 
-	return smsirPost('/send/bulk', {
-		lineNumber,
-		messageText: params.messageText,
-		mobiles,
-		sendDateTime: params.sendDateTime ?? null
-	});
+	return smsirPost(
+		'/send/bulk',
+		{
+			lineNumber: config.lineNumber,
+			messageText: params.messageText,
+			mobiles,
+			sendDateTime: params.sendDateTime ?? null
+		},
+		config
+	);
 }
 
-export async function smsirGetCredit(): Promise<number> {
-	const apiKey = getSmsirApiKey();
-	if (!apiKey) throw new SmsIrError('کلید SMS.ir تنظیم نشده است');
+export async function smsirGetCredit(config?: ResolvedSmsConfig): Promise<number> {
+	assertServerSideSmsIr();
+	const cfg = config ?? (await resolveSmsConfig());
+	if (!cfg.apiKey) throw new SmsIrError('کلید SMS.ir تنظیم نشده است');
 
 	const res = await fetch(`${getSmsirApiBase()}/credit`, {
-		headers: { Accept: 'application/json', 'X-API-KEY': apiKey }
+		headers: { Accept: 'application/json', 'X-API-KEY': cfg.apiKey }
 	});
 	const json = (await res.json()) as SmsIrEnvelope<number>;
 	if (!res.ok) {

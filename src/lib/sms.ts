@@ -42,7 +42,10 @@ export function renderSmsBody(template: SmsTemplate, payload: Record<string, str
 	return TEMPLATE_BODIES[template](payload);
 }
 
-/** Client helper — posts to /api/sms/send (sms_outbox + SMS.ir when configured). */
+/**
+ * Browser helper only — never talks to SMS.ir and never touches the API key.
+ * Proxies to SvelteKit `/api/sms/send`, which queues + dispatches server-side.
+ */
 export async function sendSms(input: SendSmsInput): Promise<SendSmsResult> {
 	const body =
 		input.body ||
@@ -59,13 +62,24 @@ export async function sendSms(input: SendSmsInput): Promise<SendSmsResult> {
 		const res = await fetch('/api/sms/send', {
 			method: 'POST',
 			headers,
-			body: JSON.stringify({ ...input, body })
+			credentials: 'include',
+			body: JSON.stringify({
+				to: input.to,
+				template: input.template,
+				payload: input.payload,
+				body
+			})
 		});
 		const data = (await res.json()) as SendSmsResult & { error?: string };
 		if (!res.ok) {
 			return { ok: false, status: 'failed', error: data.error || 'ارسال ناموفق' };
 		}
-		return data;
+		return {
+			ok: data.ok,
+			status: data.status,
+			id: data.id,
+			error: data.error
+		};
 	} catch (e: unknown) {
 		return {
 			ok: false,
